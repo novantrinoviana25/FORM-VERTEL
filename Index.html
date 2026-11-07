@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vertel ke PDF</title>
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#fff; --ink:#1b1f24; --mute:#5b6570; --line:#dfe3e8; --soft:#eef1f4;
+  --acc:#0b5fff; --acc-ink:#fff; --ok:#0f7b45; --warn:#b45309; --warn-bg:#fff4e0; --ok-bg:#e6f5ec; --chip:#e8f0ff;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171b; --panel:#1c2026; --ink:#e8ebef; --mute:#9aa4af; --line:#2c333b; --soft:#252b33;
+    --acc:#5b94ff; --acc-ink:#0b1220; --ok:#4cc38a; --warn:#f0b35a; --warn-bg:#33291a; --ok-bg:#16301f; --chip:#1f2c47;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header.top{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:16px;margin:0;font-weight:650}
+header.top .sub{color:var(--mute);font-size:12.5px}
+header.top .sp{flex:1}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer}
+button:hover{background:var(--soft)}
+button.primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button.primary:hover{filter:brightness(1.08);background:var(--acc)}
+button.ghost{border-color:transparent;background:transparent;color:var(--mute)}
+.layout{display:grid;grid-template-columns:minmax(380px,520px) minmax(0,1fr);gap:16px;padding:16px;align-items:start;max-width:1500px;margin:0 auto}
+.col-form{display:flex;flex-direction:column;gap:12px;min-width:0}
+.col-prev{position:sticky;top:64px;min-width:0}
+@media (max-width:980px){.layout{grid-template-columns:1fr}.col-prev{position:static}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 0 10px;font-weight:650}
+details.card>summary{cursor:pointer;list-style:none;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);font-weight:650;display:flex;align-items:center;gap:8px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"▸";transition:transform .15s}
+details.card[open]>summary::before{transform:rotate(90deg)}
+details.card[open]>summary{margin-bottom:10px}
+.opt{font-size:11px;text-transform:none;letter-spacing:0;background:var(--soft);color:var(--mute);padding:1px 7px;border-radius:99px;font-weight:500}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--mute);cursor:pointer;transition:.15s}
+.drop.over,.drop:hover{border-color:var(--acc);background:var(--chip);color:var(--ink)}
+.drop b{color:var(--ink)}
+.drop small{display:block;margin-top:4px}
+.status{margin-top:10px;font-size:13px}
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.mute{background:var(--soft);color:var(--mute)}
+dl.kv{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;margin:0;font-size:13px}
+dl.kv dt{color:var(--mute)} dl.kv dd{margin:0;font-weight:560;overflow-wrap:anywhere}
+.row{padding:9px 0;border-top:1px solid var(--soft)}
+.row:first-of-type{border-top:0}
+.row .lab{font-size:13px;font-weight:560;margin-bottom:5px}
+.row .num{color:var(--mute);font-weight:400;font-size:11px;margin-left:6px}
+.row.sub{padding-left:12px;border-left:3px solid var(--warn-bg)}
+.row.sub .lab{color:var(--mute);font-weight:500}
+.hint{margin-top:5px;font-size:12.5px;color:var(--mute);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.hint .src{background:var(--soft);padding:1px 7px;border-radius:6px;color:var(--ink)}
+.hint.none{color:var(--warn)}
+.chip{background:var(--chip);color:var(--acc);border:0;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer}
+.chip:hover{filter:brightness(.95)}
+.gap{height:6px;border-top:2px solid var(--line);margin:8px 0 0}
+input[type=text],input[type=date],input[type=time],select,textarea{width:100%;font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+textarea{min-height:64px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 13px;background:var(--panel);border-right:1px solid var(--line);font-size:13px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--acc);color:var(--acc-ink);font-weight:600}
+.seg button.on.bad{background:var(--warn);color:#fff}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 6px}
+.todo{margin:0;padding-left:18px;font-size:13px}
+.todo li{cursor:pointer} .todo li:hover{text-decoration:underline}
+.prevbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.prevbar input{flex:1;min-width:160px}
+.paperwrap{background:#9aa1a9;padding:10px;border-radius:12px;overflow:auto}
+.paper{background:#fff;margin:0 auto;box-shadow:0 2px 14px rgba(0,0,0,.35);position:relative;overflow:hidden}
+.sheet{display:grid;position:absolute;left:0;top:0;transform-origin:0 0;background:#fff;color:#000;
+  font-family:Arial,"Liberation Sans",Helvetica,sans-serif}
+.sheet .c{display:flex;padding:0 2px;overflow:hidden;min-width:0;min-height:0;line-height:1.12}
+.sheet .c .t{display:block;width:100%;overflow:hidden;white-space:nowrap}
+.sheet .c.sp,.sheet .c.sp .t{overflow:visible}
+.sheet .c.sp{position:relative;z-index:1}
+.sheet .c.w .t{white-space:pre-wrap;overflow-wrap:anywhere}
+.sheet .c.col .t{display:flex;justify-content:space-between}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1b1f24;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw}
+.toast.show{opacity:1}
+@media print{
+  @page{size:Letter portrait;margin:.1in}
+  html,body{background:#fff!important;height:auto!important}
+  header.top,.col-form,.prevbar,.toast{display:none!important}
+  .layout{display:block;padding:0;max-width:none;margin:0}
+  .col-prev{position:static}
+  .paperwrap{background:none;padding:0;overflow:visible;border-radius:0}
+  .paper{box-shadow:none;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Vertel → PDF</h1>
+  <span class="sub">Semua data diproses di browser ini saja, tidak ada yang dikirim ke mana pun.</span>
+  <span class="sp"></span>
+  <button id="btnReset" class="ghost" title="Kosongkan form untuk kasus baru">Kasus baru</button>
+  <button id="btnPrint" class="primary">Simpan sebagai PDF</button>
+</header>
+
+<div class="layout">
+  <div class="col-form" id="colForm">
+    <section class="card">
+      <h2>1 · Upload Summary Approval</h2>
+      <div class="drop" id="drop" tabindex="0">
+        <b>Tarik file Summary (.xlsx) ke sini</b> atau klik untuk memilih
+        <small>Data aplikasi, debitur, usaha, dan kendaraan terisi otomatis. File VERTEL.xlsx lama juga bisa dibuka untuk melanjutkan/mengedit.</small>
+      </div>
+      <input type="file" id="file" accept=".xlsx" multiple hidden>
+      <div class="status" id="status"></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12.5px;color:var(--mute);cursor:pointer"><input type="checkbox" id="showAuto" style="margin-top:3px"> <span>Tampilkan isian otomatis (nomor order, jam, data kendaraan, DP, lokasi pemakaian, rekomendasi, dll.) untuk dicek/diubah</span></label>
+    </section>
+    <section class="card" id="cardCase" hidden>
+      <h2>Ringkasan kasus (dari Summary)</h2>
+      <dl class="kv" id="caseKv"></dl>
+    </section>
+    <div id="formHost"></div>
+  </div>
+
+  <div class="col-prev">
+    <div class="prevbar">
+      <label for="fname" style="color:var(--mute)">Nama file</label>
+      <input type="text" id="fname" placeholder="NAMA_VERTEL">
+      <span class="badge mute" id="complete"></span>
+    </div>
+    <div class="paperwrap" id="paperwrap"><div class="paper" id="paper"><div class="sheet" id="sheet"></div></div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const LAYOUT={"cols":[2.5,2.5,2.5,2.5,2.5,3.08203125,2.5,2.5,2.5,2.5,2.5,2.5,6.33203125,2.5,2.5,2.5,2.5,2.5,2.83203125,2.83203125,2.83203125,2.83203125,2.83203125,2.83203125,3.25,2.5,2.5,2.5,3.5,2.5,2.5,2.5,4.08203125,2.5,2.5,2.5,2.5,4.75,2.5,2.5,3.08203125,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,0.83203125],"rows":[14.25,29.25,14.25,15.75,15.75,15.75,12.0,15.75,3.0,14.25,14.25,14.25,14.25,14.25,14.25,14.25,28.5,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,12.0,15.75,14.25,14.25,14.25,14.25,9.0,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,12.0,15.75,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,14.25,12.0,15.75,14.25,14.25,14.25,14.25,14.25,14.25,12.0,14.25,14.25,14.25,14.25,12.0,14.25,14.25],"cells":[{"r1":2,"c1":1,"r2":2,"c2":57,"k":"t","mg":1,"x":"Laporan Hasil Verifikasi Telepon (Vertel)","bd":{"t":"thin","l":"thin","b":"thin","r":"thin"},"fs":18.0,"b":1,"h":"center","v":"center"},{"r1":3,"c1":1,"r2":3,"c2":1,"bd":{"t":"thin","l":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":2,"r2":3,"c2":2,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":3,"r2":3,"c2":3,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":4,"r2":3,"c2":4,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":5,"r2":3,"c2":5,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":6,"r2":3,"c2":6,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":7,"r2":3,"c2":7,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":8,"r2":3,"c2":8,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":9,"r2":3,"c2":9,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":10,"r2":3,"c2":10,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":11,"r2":3,"c2":11,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":12,"r2":3,"c2":12,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":13,"r2":3,"c2":13,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":14,"r2":3,"c2":14,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":15,"r2":3,"c2":15,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":16,"r2":3,"c2":16,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":17,"r2":3,"c2":17,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":18,"r2":3,"c2":18,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":19,"r2":3,"c2":19,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":20,"r2":3,"c2":20,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":21,"r2":3,"c2":21,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":22,"r2":3,"c2":22,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":23,"r2":3,"c2":23,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":24,"r2":3,"c2":24,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":3,"c1":25,"r2":3,"c2":25,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":26,"r2":3,"c2":26,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":27,"r2":3,"c2":27,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":28,"r2":3,"c2":28,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":29,"r2":3,"c2":29,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":30,"r2":3,"c2":30,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":31,"r2":3,"c2":31,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":32,"r2":3,"c2":32,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":33,"r2":3,"c2":33,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":34,"r2":3,"c2":34,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":35,"r2":3,"c2":35,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":36,"r2":3,"c2":36,"bd":{"t":"thin"},"fs":8.0,"b":1,"v":"center"},{"r1":3,"c1":37,"r2":3,"c2":38,"mg":1,"bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":3,"c1":39,"r2":3,"c2":40,"mg":1,"bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":3,"c1":41,"r2":3,"c2":57,"mg":1,"bd":{"t":"thin","r":"thin"},"fs":8.0,"b":1,"h":"center","v":"center","w":1},{"r1":4,"c1":1,"r2":4,"c2":7,"k":"t","mg":1,"x":"No. Order / No. Aplikasi","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":4,"c1":8,"r2":4,"c2":11,"k":"f","mg":1,"id":6,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":4,"c1":12,"r2":4,"c2":12,"k":"t","x":"/","bd":{"b":"dotted"},"fs":8.0,"h":"center","v":"center","w":1},{"r1":4,"c1":13,"r2":4,"c2":17,"k":"f","mg":1,"id":7,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":4,"c1":19,"r2":4,"c2":25,"k":"t","mg":1,"x":"Nama Cadeb","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":4,"c1":26,"r2":4,"c2":35,"k":"f","mg":1,"id":10,"u":1,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":4,"c1":37,"r2":4,"c2":44,"k":"t","mg":1,"x":"Portofolio / Jenis Aplikasi","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":4,"c1":45,"r2":4,"c2":49,"k":"f","mg":1,"id":12,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":4,"c1":50,"r2":4,"c2":50,"k":"t","x":"/","bd":{"b":"dotted"},"fs":8.0,"h":"center","v":"center","w":1},{"r1":4,"c1":51,"r2":4,"c2":56,"k":"f","mg":1,"id":11,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":4,"c1":57,"r2":4,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":5,"c1":1,"r2":5,"c2":7,"k":"t","mg":1,"x":"Cabang","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":5,"c1":8,"r2":5,"c2":17,"k":"f","mg":1,"id":8,"u":1,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":5,"c1":19,"r2":5,"c2":25,"k":"t","mg":1,"x":"Tanggal Vertel / Jam Vertel","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":5,"c1":26,"r2":5,"c2":29,"k":"f","mg":1,"id":21,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1,"nf":"date"},{"r1":5,"c1":30,"r2":5,"c2":30,"k":"t","x":"/","bd":{"b":"dotted"},"fs":8.0,"h":"center","v":"center","w":1},{"r1":5,"c1":31,"r2":5,"c2":35,"k":"f","mg":1,"id":22,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":5,"c1":37,"r2":5,"c2":44,"k":"t","mg":1,"x":"Tipe Pembiayaan","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":5,"c1":45,"r2":5,"c2":56,"k":"f","mg":1,"id":13,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":5,"c1":57,"r2":5,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":6,"c1":1,"r2":6,"c2":7,"k":"t","mg":1,"x":"MUFnet","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":6,"c1":8,"r2":6,"c2":17,"k":"f","mg":1,"id":9,"u":1,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":6,"c1":19,"r2":6,"c2":25,"k":"t","mg":1,"x":"No Telpon Yang Dihubungi","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":6,"c1":26,"r2":6,"c2":35,"k":"f","mg":1,"id":23,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":6,"c1":37,"r2":6,"c2":44,"k":"t","mg":1,"x":"NIK / Nama PIC Survey","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":6,"c1":45,"r2":6,"c2":47,"k":"f","mg":1,"id":16,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":6,"c1":48,"r2":6,"c2":48,"k":"t","x":"/","bd":{"b":"dotted"},"fs":8.0,"h":"center","v":"center","w":1},{"r1":6,"c1":49,"r2":6,"c2":56,"k":"f","mg":1,"id":17,"u":1,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":6,"c1":57,"r2":6,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":7,"c1":1,"r2":7,"c2":1,"bd":{"l":"thin","b":"thin"},"fs":8.0},{"r1":7,"c1":47,"r2":7,"c2":47,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":48,"r2":7,"c2":48,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":49,"r2":7,"c2":49,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":50,"r2":7,"c2":50,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":51,"r2":7,"c2":51,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":52,"r2":7,"c2":52,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":53,"r2":7,"c2":53,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":54,"r2":7,"c2":54,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":55,"r2":7,"c2":55,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":56,"r2":7,"c2":56,"bd":{"t":"dotted"},"fs":8.0,"v":"center","w":1},{"r1":7,"c1":57,"r2":7,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":8,"c1":1,"r2":8,"c2":1,"k":"t","x":"Verifikasi Telpon Ke Cadeb (Pemohon Langsung): Data Pribadi & Pendapatan","bd":{"t":"thin","l":"thin","b":"thin"},"fs":11.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":2,"r2":8,"c2":2,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":3,"r2":8,"c2":3,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":4,"r2":8,"c2":4,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":5,"r2":8,"c2":5,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":6,"r2":8,"c2":6,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":7,"r2":8,"c2":7,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":8,"r2":8,"c2":8,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":9,"r2":8,"c2":9,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":10,"r2":8,"c2":10,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":11,"r2":8,"c2":11,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":12,"r2":8,"c2":12,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":13,"r2":8,"c2":13,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":14,"r2":8,"c2":14,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":15,"r2":8,"c2":15,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":16,"r2":8,"c2":16,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":17,"r2":8,"c2":17,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":18,"r2":8,"c2":18,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":19,"r2":8,"c2":19,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":20,"r2":8,"c2":20,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":21,"r2":8,"c2":21,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":22,"r2":8,"c2":22,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":23,"r2":8,"c2":23,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":24,"r2":8,"c2":24,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":25,"r2":8,"c2":25,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":26,"r2":8,"c2":26,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":27,"r2":8,"c2":27,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":28,"r2":8,"c2":28,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":29,"r2":8,"c2":29,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":30,"r2":8,"c2":30,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":31,"r2":8,"c2":31,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":32,"r2":8,"c2":32,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":33,"r2":8,"c2":33,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":34,"r2":8,"c2":34,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":35,"r2":8,"c2":35,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":36,"r2":8,"c2":36,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":37,"r2":8,"c2":37,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":38,"r2":8,"c2":38,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":39,"r2":8,"c2":39,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":40,"r2":8,"c2":40,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":41,"r2":8,"c2":41,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":42,"r2":8,"c2":42,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":43,"r2":8,"c2":43,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":44,"r2":8,"c2":44,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":45,"r2":8,"c2":45,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":46,"r2":8,"c2":46,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":47,"r2":8,"c2":47,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":48,"r2":8,"c2":48,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":49,"r2":8,"c2":49,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":50,"r2":8,"c2":50,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":51,"r2":8,"c2":51,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":52,"r2":8,"c2":52,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":53,"r2":8,"c2":53,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":54,"r2":8,"c2":54,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":55,"r2":8,"c2":55,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":56,"r2":8,"c2":56,"bd":{"t":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":8,"c1":57,"r2":8,"c2":57,"bd":{"t":"thin","b":"thin","r":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":9,"c1":1,"r2":9,"c2":1,"bd":{"t":"thin","l":"thin"},"fs":10.0,"b":1,"v":"center"},{"r1":9,"c1":2,"r2":9,"c2":2,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":3,"r2":9,"c2":3,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":4,"r2":9,"c2":4,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":5,"r2":9,"c2":5,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":6,"r2":9,"c2":6,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":7,"r2":9,"c2":7,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":8,"r2":9,"c2":8,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":9,"r2":9,"c2":9,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":10,"r2":9,"c2":10,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":11,"r2":9,"c2":11,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":12,"r2":9,"c2":12,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":13,"r2":9,"c2":13,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":14,"r2":9,"c2":14,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":15,"r2":9,"c2":15,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":16,"r2":9,"c2":16,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":17,"r2":9,"c2":17,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":18,"r2":9,"c2":18,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":19,"r2":9,"c2":19,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":20,"r2":9,"c2":20,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":21,"r2":9,"c2":21,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":22,"r2":9,"c2":22,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":23,"r2":9,"c2":23,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":24,"r2":9,"c2":24,"bd":{"t":"thin"},"fs":8.0,"v":"center"},{"r1":9,"c1":25,"r2":9,"c2":25,"bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":9,"c1":26,"r2":9,"c2":26,"bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":9,"c1":27,"r2":9,"c2":27,"bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":9,"c1":28,"r2":9,"c2":28,"bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":9,"c1":57,"r2":9,"c2":57,"bd":{"r":"thin"},"fs":8.0,"b":1,"h":"center","v":"center"},{"r1":10,"c1":1,"r2":10,"c2":11,"k":"t","mg":1,"x":"Benar Mengajukan Pembiayaan di MUF","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":10,"c1":12,"r2":10,"c2":14,"k":"f","mg":1,"id":26,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":10,"c1":15,"r2":10,"c2":28,"k":"f","mg":1,"id":27,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":10,"c1":30,"r2":12,"c2":37,"k":"t","mg":1,"x":"Kelengkapan dokumen persyaratan kredit yang sudah diserahkan ke MUF:","fs":8.0,"b":1,"h":"left","v":"top","w":1},{"r1":10,"c1":38,"r2":10,"c2":38,"k":"t","x":":","fs":8.0,"b":1,"h":"center","v":"top","w":1},{"r1":10,"c1":39,"r2":14,"c2":41,"k":"f","mg":1,"id":28,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":10,"c1":42,"r2":14,"c2":56,"k":"f","mg":1,"id":29,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":10,"c1":57,"r2":10,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":11,"c1":1,"r2":11,"c2":11,"k":"t","mg":1,"x":"Alamat Tinggal/Domisili","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":11,"c1":12,"r2":13,"c2":14,"k":"f","mg":1,"id":30,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":11,"c1":15,"r2":13,"c2":28,"k":"f","mg":1,"id":31,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":11,"c1":57,"r2":11,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":12,"c1":1,"r2":12,"c2":1,"bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"top","nf":"colon"},{"r1":12,"c1":57,"r2":12,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":13,"c1":1,"r2":13,"c2":1,"bd":{"l":"thin"},"fs":8.0,"b":1,"v":"top"},{"r1":13,"c1":57,"r2":13,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":14,"c1":1,"r2":14,"c2":11,"k":"t","mg":1,"x":"Lama Tinggal Di Alamat Domisili","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":14,"c1":12,"r2":14,"c2":14,"k":"f","mg":1,"id":32,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":14,"c1":15,"r2":14,"c2":28,"k":"f","mg":1,"id":33,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top"},{"r1":14,"c1":57,"r2":14,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":15,"c1":1,"r2":15,"c2":11,"k":"t","mg":1,"x":"Status Kepemilikan Tempat Tinggal","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":15,"c1":12,"r2":15,"c2":14,"k":"f","mg":1,"id":34,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":15,"c1":15,"r2":15,"c2":28,"k":"f","mg":1,"id":35,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top"},{"r1":15,"c1":57,"r2":15,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":16,"c1":1,"r2":16,"c2":1,"bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":16,"c1":12,"r2":16,"c2":12,"bd":{"t":"dotted"},"fs":8.0,"h":"left","v":"center"},{"r1":16,"c1":13,"r2":16,"c2":13,"bd":{"t":"dotted"},"fs":8.0,"h":"left","v":"center"},{"r1":16,"c1":14,"r2":16,"c2":14,"bd":{"t":"dotted"},"fs":8.0,"h":"left","v":"center"},{"r1":16,"c1":57,"r2":16,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":17,"c1":1,"r2":17,"c2":11,"k":"t","mg":1,"x":"Sumber Pendapatan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":17,"c1":12,"r2":17,"c2":14,"k":"f","mg":1,"id":37,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":17,"c1":15,"r2":17,"c2":28,"k":"f","mg":1,"id":38,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":17,"c1":30,"r2":17,"c2":38,"k":"t","mg":1,"x":"Usaha Yang Dijalankan","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":17,"c1":39,"r2":17,"c2":41,"k":"f","mg":1,"id":52,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":17,"c1":42,"r2":17,"c2":56,"k":"f","mg":1,"id":53,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":17,"c1":57,"r2":17,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":18,"c1":1,"r2":18,"c2":11,"k":"t","mg":1,"x":"Pekerjaan Yang Dimiliki","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":18,"c1":12,"r2":18,"c2":14,"k":"f","mg":1,"id":39,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":18,"c1":15,"r2":18,"c2":28,"k":"f","mg":1,"id":40,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":18,"c1":30,"r2":18,"c2":38,"k":"t","mg":1,"x":"Nama Tempat Usaha ","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":18,"c1":39,"r2":18,"c2":41,"k":"f","mg":1,"id":54,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":18,"c1":42,"r2":18,"c2":56,"k":"f","mg":1,"id":55,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":18,"c1":57,"r2":18,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":19,"c1":1,"r2":19,"c2":11,"k":"t","mg":1,"x":"Nama Tempat Kerja","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":19,"c1":12,"r2":19,"c2":14,"k":"f","mg":1,"id":41,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":19,"c1":15,"r2":19,"c2":28,"k":"f","mg":1,"id":42,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":19,"c1":30,"r2":19,"c2":38,"k":"t","mg":1,"x":"Alamat Tempat Usaha","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":19,"c1":39,"r2":19,"c2":39,"k":"f","id":56,"bd":{"t":"dotted"},"fs":8.0,"v":"top"},{"r1":19,"c1":40,"r2":19,"c2":40,"bd":{"t":"dotted"},"fs":8.0,"v":"top"},{"r1":19,"c1":41,"r2":19,"c2":41,"bd":{"t":"dotted"},"fs":8.0,"v":"top"},{"r1":19,"c1":42,"r2":20,"c2":56,"k":"f","mg":1,"id":57,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":19,"c1":57,"r2":19,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":20,"c1":1,"r2":20,"c2":11,"k":"t","mg":1,"x":"Jabatan  Di Tempat Kerja","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":20,"c1":12,"r2":20,"c2":14,"k":"f","mg":1,"id":43,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":20,"c1":15,"r2":20,"c2":28,"k":"f","mg":1,"id":44,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":20,"c1":57,"r2":20,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":21,"c1":1,"r2":21,"c2":11,"k":"t","mg":1,"x":"Alamat Tempat Kerja","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":21,"c1":12,"r2":22,"c2":14,"k":"f","mg":1,"id":45,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":21,"c1":15,"r2":22,"c2":28,"k":"f","mg":1,"id":46,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":21,"c1":30,"r2":21,"c2":38,"k":"t","mg":1,"x":"Lama Usaha Yang Saat Ini Dijalankan","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":21,"c1":39,"r2":21,"c2":41,"k":"f","mg":1,"id":60,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":21,"c1":42,"r2":21,"c2":56,"k":"f","mg":1,"id":61,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":21,"c1":57,"r2":21,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":22,"c1":1,"r2":22,"c2":1,"bd":{"l":"thin"},"fs":8.0,"b":1},{"r1":22,"c1":30,"r2":22,"c2":38,"k":"t","mg":1,"x":"Status Kepemilikan Tempat Usaha","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":22,"c1":39,"r2":22,"c2":41,"k":"f","mg":1,"id":62,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":22,"c1":42,"r2":22,"c2":56,"k":"f","mg":1,"id":63,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":22,"c1":57,"r2":22,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":23,"c1":1,"r2":23,"c2":11,"k":"t","mg":1,"x":"Total Lama Kerja (Tahun)","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":23,"c1":12,"r2":23,"c2":14,"k":"f","mg":1,"id":47,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":23,"c1":15,"r2":23,"c2":28,"k":"f","mg":1,"id":48,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":23,"c1":30,"r2":23,"c2":38,"k":"t","mg":1,"x":"Nominal Omset Usaha per Bulan","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":23,"c1":39,"r2":23,"c2":41,"k":"f","mg":1,"id":64,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":23,"c1":42,"r2":23,"c2":56,"k":"f","mg":1,"id":65,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":23,"c1":57,"r2":23,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":24,"c1":1,"r2":24,"c2":11,"k":"t","mg":1,"x":"Nominal Gaji Per Bulan (Rp)","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":24,"c1":12,"r2":24,"c2":14,"k":"f","mg":1,"id":49,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":24,"c1":15,"r2":24,"c2":28,"k":"f","mg":1,"id":50,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":24,"c1":30,"r2":24,"c2":38,"k":"t","mg":1,"x":"Rekening Bank yang Dimiliki","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":24,"c1":39,"r2":24,"c2":56,"k":"f","mg":1,"id":66,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":24,"c1":57,"r2":24,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":25,"c1":1,"r2":25,"c2":1,"bd":{"l":"thin"},"fs":8.0,"b":1},{"r1":25,"c1":57,"r2":25,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":26,"c1":1,"r2":26,"c2":11,"k":"t","mg":1,"x":"Status Perkawinan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":26,"c1":12,"r2":26,"c2":14,"k":"f","mg":1,"id":71,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":26,"c1":15,"r2":26,"c2":28,"k":"f","mg":1,"id":72,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":26,"c1":30,"r2":26,"c2":38,"k":"t","mg":1,"x":"Pendapatan Lainnya Cadeb","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":26,"c1":39,"r2":29,"c2":41,"k":"f","mg":1,"id":68,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":26,"c1":42,"r2":29,"c2":56,"k":"f","mg":1,"id":69,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":26,"c1":57,"r2":26,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":27,"c1":1,"r2":27,"c2":11,"k":"t","mg":1,"x":"Pekerjaan/Usaha Pasangan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":27,"c1":12,"r2":27,"c2":14,"k":"f","mg":1,"id":73,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":27,"c1":15,"r2":27,"c2":28,"k":"f","mg":1,"id":74,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":27,"c1":57,"r2":27,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":28,"c1":1,"r2":28,"c2":11,"k":"t","mg":1,"x":"Nama Tempat Kerja/Usaha Pasangan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":28,"c1":12,"r2":28,"c2":14,"k":"f","mg":1,"id":75,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":28,"c1":15,"r2":28,"c2":28,"k":"f","mg":1,"id":76,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":28,"c1":57,"r2":28,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":29,"c1":1,"r2":29,"c2":11,"k":"t","mg":1,"x":"Pendapatan Per Bulan Pasangan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":29,"c1":12,"r2":29,"c2":14,"k":"f","mg":1,"id":77,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":29,"c1":15,"r2":29,"c2":28,"k":"f","mg":1,"id":78,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":29,"c1":57,"r2":29,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":30,"c1":1,"r2":30,"c2":12,"mg":1,"bd":{"l":"thin"},"fs":8.0,"h":"left","nf":"colon"},{"r1":30,"c1":57,"r2":30,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":31,"c1":1,"r2":31,"c2":1,"k":"t","x":"Verifikasi Telpon Ke Cadeb (Pemohon Langsung): Data Kendaraan","bd":{"t":"thin","l":"thin","b":"thin"},"fs":11.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":2,"r2":31,"c2":2,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":3,"r2":31,"c2":3,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":4,"r2":31,"c2":4,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":5,"r2":31,"c2":5,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":6,"r2":31,"c2":6,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":7,"r2":31,"c2":7,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":8,"r2":31,"c2":8,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":9,"r2":31,"c2":9,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":10,"r2":31,"c2":10,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":11,"r2":31,"c2":11,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":12,"r2":31,"c2":12,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":13,"r2":31,"c2":13,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":14,"r2":31,"c2":14,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":15,"r2":31,"c2":15,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":16,"r2":31,"c2":16,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":17,"r2":31,"c2":17,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":18,"r2":31,"c2":18,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":19,"r2":31,"c2":19,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":20,"r2":31,"c2":20,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":21,"r2":31,"c2":21,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":22,"r2":31,"c2":22,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":23,"r2":31,"c2":23,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":24,"r2":31,"c2":24,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":31,"c1":25,"r2":31,"c2":25,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":26,"r2":31,"c2":26,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":27,"r2":31,"c2":27,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":28,"r2":31,"c2":28,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":29,"r2":31,"c2":29,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":30,"r2":31,"c2":30,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":31,"r2":31,"c2":31,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":32,"r2":31,"c2":32,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":33,"r2":31,"c2":33,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":34,"r2":31,"c2":34,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":35,"r2":31,"c2":35,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":36,"r2":31,"c2":36,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":37,"r2":31,"c2":37,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":38,"r2":31,"c2":38,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":39,"r2":31,"c2":39,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":40,"r2":31,"c2":40,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":41,"r2":31,"c2":41,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":42,"r2":31,"c2":42,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":43,"r2":31,"c2":43,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":44,"r2":31,"c2":44,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":45,"r2":31,"c2":45,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":46,"r2":31,"c2":46,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":47,"r2":31,"c2":47,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":48,"r2":31,"c2":48,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":49,"r2":31,"c2":49,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":50,"r2":31,"c2":50,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":51,"r2":31,"c2":51,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":52,"r2":31,"c2":52,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":53,"r2":31,"c2":53,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":54,"r2":31,"c2":54,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":55,"r2":31,"c2":55,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":56,"r2":31,"c2":56,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":31,"c1":57,"r2":31,"c2":57,"bd":{"t":"thin","b":"thin","r":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":32,"c1":1,"r2":32,"c2":13,"k":"t","mg":1,"x":"Merk Kendaraan Diajukan vs Inputan Marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":32,"c1":14,"r2":32,"c2":17,"k":"f","mg":1,"id":80,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":32,"c1":18,"r2":32,"c2":28,"k":"f","mg":1,"id":81,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":32,"c1":30,"r2":32,"c2":45,"k":"t","mg":1,"x":"Jenis & Skema Pembiayaan Diajukan vs Inputan Marketing","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":32,"c1":46,"r2":32,"c2":48,"k":"f","mg":1,"id":88,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":32,"c1":49,"r2":32,"c2":56,"k":"f","mg":1,"id":89,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":32,"c1":57,"r2":32,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":33,"c1":1,"r2":33,"c2":13,"k":"t","mg":1,"x":"Model Kendaraan Diajukan vs Inputan Marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":33,"c1":14,"r2":33,"c2":17,"k":"f","mg":1,"id":82,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":33,"c1":18,"r2":33,"c2":28,"k":"f","mg":1,"id":83,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":33,"c1":30,"r2":33,"c2":45,"k":"t","mg":1,"x":"Tenor Pembiayaan Diajukan (Bulan) vs Inputan Marketing","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":33,"c1":46,"r2":33,"c2":48,"k":"f","mg":1,"id":90,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":33,"c1":49,"r2":33,"c2":56,"k":"f","mg":1,"id":91,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":33,"c1":57,"r2":33,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":34,"c1":1,"r2":34,"c2":13,"k":"t","mg":1,"x":"Type Kendaraan Diajukan vs Inputan Marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":34,"c1":14,"r2":34,"c2":17,"k":"f","mg":1,"id":84,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":34,"c1":18,"r2":34,"c2":28,"k":"f","mg":1,"id":85,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":34,"c1":30,"r2":34,"c2":45,"k":"t","mg":1,"x":"Nominal Angsuran per Bulan Diajukan vs Inputan Marketing","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":34,"c1":46,"r2":34,"c2":48,"k":"f","mg":1,"id":92,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":34,"c1":49,"r2":34,"c2":56,"k":"f","mg":1,"id":93,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":34,"c1":57,"r2":34,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":35,"c1":1,"r2":35,"c2":13,"k":"t","mg":1,"x":"Tahun Kendaraan Diajukan vs Inputan Marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":35,"c1":14,"r2":35,"c2":17,"k":"f","mg":1,"id":86,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":35,"c1":18,"r2":35,"c2":28,"k":"f","mg":1,"id":87,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":35,"c1":57,"r2":35,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":36,"c1":1,"r2":36,"c2":1,"bd":{"l":"thin"},"fs":8.0},{"r1":36,"c1":57,"r2":36,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":37,"c1":1,"r2":37,"c2":28,"k":"t","mg":1,"x":"Jika Jenis Pembiayaan & Skema Pembiayaan = Kendaraan (Non Dana)","bd":{"t":"thin","l":"thin","b":"thin","r":"thin"},"fs":9.0,"b":1,"h":"center","v":"center","w":1},{"r1":37,"c1":30,"r2":37,"c2":56,"k":"t","mg":1,"x":"Jika Jenis Pembiayaan & Skema Pembiayaan = Dana","bd":{"t":"thin","l":"thin","b":"thin","r":"thin"},"fs":9.0,"b":1,"h":"center","v":"center","w":1},{"r1":37,"c1":57,"r2":37,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":38,"c1":1,"r2":38,"c2":13,"k":"t","mg":1,"x":"Kendaraan yang diajukan sudah diterima","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":38,"c1":14,"r2":38,"c2":28,"k":"f","mg":1,"id":96,"bd":{"t":"thin","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":38,"c1":30,"r2":38,"c2":42,"k":"t","mg":1,"x":"Kendaraan yang dijaminkan benar milik Cadeb","bd":{"t":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":38,"c1":43,"r2":38,"c2":45,"k":"f","mg":1,"id":105,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":38,"c1":46,"r2":38,"c2":56,"k":"f","mg":1,"id":106,"u":1,"bd":{"t":"thin","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":38,"c1":57,"r2":38,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"top","w":1},{"r1":39,"c1":1,"r2":39,"c2":13,"k":"t","mg":1,"x":"Berapa nominal DP Riil yang dibayarkan/disetorkan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":39,"c1":14,"r2":39,"c2":28,"k":"f","mg":1,"id":97,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":39,"c1":30,"r2":39,"c2":42,"k":"t","mg":1,"x":"Dana yang diajukan sudah diterima oleh Cadeb","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":39,"c1":43,"r2":39,"c2":45,"k":"f","mg":1,"id":107,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":39,"c1":46,"r2":39,"c2":56,"k":"f","mg":1,"id":108,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":39,"c1":57,"r2":39,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":40,"c1":1,"r2":40,"c2":13,"k":"t","mg":1,"x":"Siapa rencana Pemakai kendaraan yang diajukan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":40,"c1":14,"r2":40,"c2":28,"k":"f","mg":1,"id":98,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":40,"c1":30,"r2":40,"c2":42,"k":"t","mg":1,"x":"Sudah berapa lama kendaraan tsb (Tahun)","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":40,"c1":43,"r2":40,"c2":56,"k":"f","mg":1,"id":109,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":40,"c1":57,"r2":40,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":41,"c1":1,"r2":41,"c2":13,"k":"t","mg":1,"x":"Dimana rencana lokasi pemakaian kendaraan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":41,"c1":14,"r2":41,"c2":28,"k":"f","mg":1,"id":99,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":41,"c1":30,"r2":41,"c2":42,"k":"t","mg":1,"x":"Bagaimana cara memiliki kendaraan tsb","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":41,"c1":43,"r2":42,"c2":56,"k":"f","mg":1,"id":110,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":41,"c1":57,"r2":41,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":42,"c1":1,"r2":42,"c2":13,"k":"t","mg":1,"x":"Apa tujuan penggunaan kendaraan yang diajukan","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":42,"c1":14,"r2":42,"c2":28,"k":"f","mg":1,"id":100,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":42,"c1":57,"r2":42,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":43,"c1":1,"r2":47,"c2":12,"k":"t","mg":1,"x":"Untuk Pembiayaan Kendaraan Bekas:\nCadeb sudah mengetahui Kondisi kendaraan (kelayakan unit, status pajak kendaraan, kelengkapan BPKB: ada/tidak faktur)","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"top","w":1},{"r1":43,"c1":13,"r2":47,"c2":13,"k":"t","mg":1,"x":"   :","fs":8.0,"b":1,"h":"center","v":"top","w":1},{"r1":43,"c1":14,"r2":47,"c2":16,"k":"f","mg":1,"id":101,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"top","w":1},{"r1":43,"c1":17,"r2":47,"c2":28,"k":"f","mg":1,"id":102,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":43,"c1":30,"r2":43,"c2":42,"k":"t","mg":1,"x":"Hubungan Nama di BPKB kendaraan dengan Cadeb","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":43,"c1":43,"r2":43,"c2":56,"k":"f","mg":1,"id":111,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":43,"c1":57,"r2":43,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":44,"c1":30,"r2":44,"c2":42,"k":"t","mg":1,"x":"Nilai Pencairan yang diinfokan akan diterima Cadeb","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":44,"c1":43,"r2":44,"c2":56,"k":"f","mg":1,"id":112,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1,"nf":"num"},{"r1":44,"c1":57,"r2":44,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":45,"c1":30,"r2":45,"c2":42,"k":"t","mg":1,"x":"Apa rencana tujuan penggunaan Dana","fs":8.0,"b":1,"h":"center","v":"top","nf":"colon"},{"r1":45,"c1":43,"r2":47,"c2":56,"k":"f","mg":1,"id":113,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":45,"c1":57,"r2":45,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":46,"c1":57,"r2":46,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":47,"c1":57,"r2":47,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":48,"c1":1,"r2":48,"c2":1,"bd":{"l":"thin"},"fs":8.0},{"r1":48,"c1":57,"r2":48,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":49,"c1":1,"r2":49,"c2":1,"k":"t","x":"Verifikasi Telpon Ke PIC/ Informan Di Tempat Kerja Cadeb","bd":{"t":"thin","l":"thin","b":"thin"},"fs":11.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":2,"r2":49,"c2":2,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":3,"r2":49,"c2":3,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":4,"r2":49,"c2":4,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":5,"r2":49,"c2":5,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":6,"r2":49,"c2":6,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":7,"r2":49,"c2":7,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":8,"r2":49,"c2":8,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":9,"r2":49,"c2":9,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":10,"r2":49,"c2":10,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":11,"r2":49,"c2":11,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":12,"r2":49,"c2":12,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":13,"r2":49,"c2":13,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":14,"r2":49,"c2":14,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":15,"r2":49,"c2":15,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":16,"r2":49,"c2":16,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":17,"r2":49,"c2":17,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":18,"r2":49,"c2":18,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":19,"r2":49,"c2":19,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":20,"r2":49,"c2":20,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":21,"r2":49,"c2":21,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":22,"r2":49,"c2":22,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":23,"r2":49,"c2":23,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":24,"r2":49,"c2":24,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":49,"c1":25,"r2":49,"c2":25,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":26,"r2":49,"c2":26,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":27,"r2":49,"c2":27,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":28,"r2":49,"c2":28,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":29,"r2":49,"c2":29,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":30,"r2":49,"c2":30,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":31,"r2":49,"c2":31,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":32,"r2":49,"c2":32,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":33,"r2":49,"c2":33,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":34,"r2":49,"c2":34,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":35,"r2":49,"c2":35,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":36,"r2":49,"c2":36,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":37,"r2":49,"c2":37,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":38,"r2":49,"c2":38,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":39,"r2":49,"c2":39,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":40,"r2":49,"c2":40,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":41,"r2":49,"c2":41,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":42,"r2":49,"c2":42,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":43,"r2":49,"c2":43,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":44,"r2":49,"c2":44,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":45,"r2":49,"c2":45,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":46,"r2":49,"c2":46,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":47,"r2":49,"c2":47,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":48,"r2":49,"c2":48,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":49,"r2":49,"c2":49,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":50,"r2":49,"c2":50,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":51,"r2":49,"c2":51,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":52,"r2":49,"c2":52,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":53,"r2":49,"c2":53,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":54,"r2":49,"c2":54,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":55,"r2":49,"c2":55,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":56,"r2":49,"c2":56,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":49,"c1":57,"r2":49,"c2":57,"bd":{"t":"thin","b":"thin","r":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":50,"c1":1,"r2":50,"c2":13,"k":"t","mg":1,"x":"Tanggal Vertel / Jam Vertel","bd":{"t":"thin","l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":50,"c1":14,"r2":50,"c2":18,"k":"f","mg":1,"id":116,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1,"nf":"date"},{"r1":50,"c1":23,"r2":50,"c2":23,"k":"t","x":"/","bd":{"b":"dotted"},"fs":8.0,"h":"center","v":"center","w":1},{"r1":50,"c1":24,"r2":50,"c2":28,"k":"f","mg":1,"id":117,"bd":{"t":"thin","b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":50,"c1":30,"r2":50,"c2":42,"k":"t","mg":1,"x":"Nama PIC/Informan Yang Dihubungi","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":50,"c1":43,"r2":50,"c2":56,"k":"f","mg":1,"id":119,"u":1,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":50,"c1":57,"r2":50,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":51,"c1":1,"r2":51,"c2":13,"k":"t","mg":1,"x":"No Telpon Yang Dihubungi","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":51,"c1":14,"r2":51,"c2":28,"k":"f","mg":1,"id":118,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":51,"c1":30,"r2":51,"c2":42,"k":"t","mg":1,"x":"Hubungan PIC/Informan dengan Cadeb","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":51,"c1":43,"r2":51,"c2":56,"k":"f","mg":1,"id":120,"u":1,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":51,"c1":57,"r2":51,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":52,"c1":1,"r2":52,"c2":13,"k":"t","mg":1,"x":"Cadeb benar bekerja di perusahaan tsb","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":52,"c1":14,"r2":52,"c2":17,"k":"f","mg":1,"id":121,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":52,"c1":18,"r2":52,"c2":28,"k":"f","mg":1,"id":122,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":52,"c1":57,"r2":52,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":53,"c1":1,"r2":53,"c2":21,"k":"t","mg":1,"x":"Jabatan Cadeb sesuai inputan marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":53,"c1":22,"r2":53,"c2":24,"k":"f","mg":1,"id":123,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":53,"c1":25,"r2":53,"c2":56,"k":"f","mg":1,"id":124,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":53,"c1":57,"r2":53,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":54,"c1":1,"r2":54,"c2":21,"k":"t","mg":1,"x":"Status Kepegawaian Cadeb sesuai inputan marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":54,"c1":22,"r2":54,"c2":24,"k":"f","mg":1,"id":125,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":54,"c1":25,"r2":54,"c2":56,"k":"f","mg":1,"id":126,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":54,"c1":57,"r2":54,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":55,"c1":1,"r2":55,"c2":21,"k":"t","mg":1,"x":"Alamat Perusahaan sesuai seperti inputan marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":55,"c1":22,"r2":55,"c2":24,"k":"f","mg":1,"id":127,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":55,"c1":25,"r2":55,"c2":56,"k":"f","mg":1,"id":128,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":55,"c1":57,"r2":55,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":56,"c1":1,"r2":56,"c2":21,"k":"t","mg":1,"x":"Lama Kerja Cadeb sesuai inputan marketing","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":56,"c1":22,"r2":56,"c2":24,"k":"f","mg":1,"id":129,"bd":{"b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":56,"c1":25,"r2":56,"c2":56,"k":"f","mg":1,"id":130,"u":1,"bd":{"t":"dotted","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":56,"c1":57,"r2":56,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":57,"c1":1,"r2":57,"c2":21,"k":"t","mg":1,"x":"Bagaimana sistem/mekanisme pembayaran gaji (payroll) (Tunai/Transfer/dll)","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":57,"c1":22,"r2":57,"c2":56,"k":"f","mg":1,"id":131,"u":1,"bd":{"t":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":57,"c1":57,"r2":57,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":58,"c1":1,"r2":58,"c2":21,"k":"t","mg":1,"x":"Pembayaran gaji (payroll) biasanya dilakukan tiap tanggal berapa per bulannya","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":58,"c1":22,"r2":58,"c2":56,"k":"f","mg":1,"id":132,"u":1,"bd":{"t":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":58,"c1":57,"r2":58,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":1,"r2":59,"c2":1,"bd":{"l":"thin","b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":2,"r2":59,"c2":2,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":3,"r2":59,"c2":3,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":4,"r2":59,"c2":4,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":5,"r2":59,"c2":5,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":6,"r2":59,"c2":6,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":7,"r2":59,"c2":7,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":8,"r2":59,"c2":8,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":9,"r2":59,"c2":9,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":10,"r2":59,"c2":10,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":11,"r2":59,"c2":11,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":12,"r2":59,"c2":12,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":13,"r2":59,"c2":13,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":14,"r2":59,"c2":14,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":15,"r2":59,"c2":15,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":16,"r2":59,"c2":16,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":17,"r2":59,"c2":17,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":18,"r2":59,"c2":18,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":19,"r2":59,"c2":19,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":20,"r2":59,"c2":20,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":21,"r2":59,"c2":21,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":22,"r2":59,"c2":22,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":23,"r2":59,"c2":23,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":24,"r2":59,"c2":24,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":25,"r2":59,"c2":25,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":26,"r2":59,"c2":26,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":27,"r2":59,"c2":27,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":28,"r2":59,"c2":28,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":29,"r2":59,"c2":29,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":30,"r2":59,"c2":30,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":31,"r2":59,"c2":31,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":32,"r2":59,"c2":32,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":33,"r2":59,"c2":33,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":34,"r2":59,"c2":34,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":35,"r2":59,"c2":35,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":36,"r2":59,"c2":36,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":37,"r2":59,"c2":37,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":38,"r2":59,"c2":38,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":39,"r2":59,"c2":39,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":40,"r2":59,"c2":40,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":41,"r2":59,"c2":41,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":42,"r2":59,"c2":42,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":43,"r2":59,"c2":43,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":44,"r2":59,"c2":44,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":45,"r2":59,"c2":45,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":46,"r2":59,"c2":46,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":47,"r2":59,"c2":47,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":48,"r2":59,"c2":48,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":49,"r2":59,"c2":49,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":50,"r2":59,"c2":50,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":51,"r2":59,"c2":51,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":52,"r2":59,"c2":52,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":53,"r2":59,"c2":53,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":54,"r2":59,"c2":54,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":55,"r2":59,"c2":55,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":56,"r2":59,"c2":56,"bd":{"b":"thin"},"fs":8.0,"v":"center"},{"r1":59,"c1":57,"r2":59,"c2":57,"bd":{"b":"thin","r":"thin"},"fs":8.0,"v":"center"},{"r1":60,"c1":1,"r2":60,"c2":1,"k":"t","x":"Informasi Tambahan Hasil Proses Verifikasi Telpon Ke Pihak Lain (Jika Ada/Dilakukan)","bd":{"t":"thin","l":"thin","b":"thin"},"fs":11.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":2,"r2":60,"c2":2,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":3,"r2":60,"c2":3,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":4,"r2":60,"c2":4,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":5,"r2":60,"c2":5,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":6,"r2":60,"c2":6,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":7,"r2":60,"c2":7,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":8,"r2":60,"c2":8,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":9,"r2":60,"c2":9,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":10,"r2":60,"c2":10,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":11,"r2":60,"c2":11,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":12,"r2":60,"c2":12,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":13,"r2":60,"c2":13,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":14,"r2":60,"c2":14,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":15,"r2":60,"c2":15,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":16,"r2":60,"c2":16,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":17,"r2":60,"c2":17,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":18,"r2":60,"c2":18,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":19,"r2":60,"c2":19,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":20,"r2":60,"c2":20,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":21,"r2":60,"c2":21,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":22,"r2":60,"c2":22,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":23,"r2":60,"c2":23,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":24,"r2":60,"c2":24,"bd":{"t":"thin","b":"thin"},"fs":8.0,"h":"left","v":"center"},{"r1":60,"c1":25,"r2":60,"c2":25,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":26,"r2":60,"c2":26,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":27,"r2":60,"c2":27,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":28,"r2":60,"c2":28,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":29,"r2":60,"c2":29,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":30,"r2":60,"c2":30,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":31,"r2":60,"c2":31,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":32,"r2":60,"c2":32,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":33,"r2":60,"c2":33,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":34,"r2":60,"c2":34,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":35,"r2":60,"c2":35,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":36,"r2":60,"c2":36,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":37,"r2":60,"c2":37,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":38,"r2":60,"c2":38,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":39,"r2":60,"c2":39,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":40,"r2":60,"c2":40,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":41,"r2":60,"c2":41,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":42,"r2":60,"c2":42,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":43,"r2":60,"c2":43,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":44,"r2":60,"c2":44,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":45,"r2":60,"c2":45,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":46,"r2":60,"c2":46,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":47,"r2":60,"c2":47,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":48,"r2":60,"c2":48,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":49,"r2":60,"c2":49,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":50,"r2":60,"c2":50,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":51,"r2":60,"c2":51,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":52,"r2":60,"c2":52,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":53,"r2":60,"c2":53,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":54,"r2":60,"c2":54,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":55,"r2":60,"c2":55,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":56,"r2":60,"c2":56,"bd":{"t":"thin","b":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":60,"c1":57,"r2":60,"c2":57,"bd":{"t":"thin","b":"thin","r":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":61,"c1":1,"r2":61,"c2":13,"k":"t","mg":1,"x":"Tanggal Vertel / Jam Vertel","bd":{"t":"thin","l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":61,"c1":14,"r2":61,"c2":18,"k":"f","mg":1,"id":135,"bd":{"t":"thin","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1,"nf":"date"},{"r1":61,"c1":19,"r2":61,"c2":19,"bd":{"t":"thin"},"fs":8.0},{"r1":61,"c1":20,"r2":61,"c2":20,"bd":{"t":"thin"},"fs":8.0},{"r1":61,"c1":21,"r2":61,"c2":21,"bd":{"t":"thin"},"fs":8.0},{"r1":61,"c1":22,"r2":61,"c2":22,"bd":{"t":"thin"},"fs":8.0},{"r1":61,"c1":23,"r2":61,"c2":23,"k":"t","x":"/","bd":{"t":"thin","b":"dotted"},"fs":8.0,"h":"center","v":"center","w":1},{"r1":61,"c1":24,"r2":61,"c2":28,"k":"f","mg":1,"id":136,"bd":{"t":"thin","b":"dotted"},"fs":8.0,"h":"left","v":"top"},{"r1":61,"c1":29,"r2":61,"c2":29,"bd":{"t":"thin"},"fs":8.0},{"r1":61,"c1":30,"r2":61,"c2":42,"k":"t","mg":1,"x":"Nama PIC/Informan Yang Dihubungi","bd":{"t":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":61,"c1":43,"r2":61,"c2":56,"k":"f","mg":1,"id":138,"u":1,"bd":{"t":"thin","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":61,"c1":57,"r2":61,"c2":57,"bd":{"t":"thin","r":"thin"},"fs":8.0,"v":"center"},{"r1":62,"c1":1,"r2":62,"c2":13,"k":"t","mg":1,"x":"No Telpon Yang Dihubungi","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":62,"c1":14,"r2":62,"c2":28,"k":"f","mg":1,"id":137,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":62,"c1":30,"r2":62,"c2":42,"k":"t","mg":1,"x":"Hubungan PIC/Informan dengan Cadeb","fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":62,"c1":43,"r2":62,"c2":56,"k":"f","mg":1,"id":139,"u":1,"bd":{"t":"dotted","b":"dotted"},"fs":8.0,"h":"left","v":"center","w":1},{"r1":62,"c1":57,"r2":62,"c2":57,"bd":{"r":"thin"},"fs":8.0,"v":"center"},{"r1":63,"c1":1,"r2":63,"c2":4,"k":"t","mg":1,"x":"Hasil Vertel","bd":{"l":"thin"},"fs":8.0,"b":1,"h":"left","v":"center","nf":"colon"},{"r1":63,"c1":5,"r2":66,"c2":56,"k":"f","mg":1,"id":140,"u":1,"bd":{"b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":63,"c1":57,"r2":63,"c2":57,"bd":{"r":"thin"},"fs":8.0,"b":1,"v":"top","w":1,"nf":"colon"},{"r1":64,"c1":1,"r2":64,"c2":1,"bd":{"l":"thin"},"fs":8.0,"v":"center"},{"r1":64,"c1":57,"r2":64,"c2":57,"bd":{"r":"thin"},"fs":8.0,"b":1,"v":"top","w":1,"nf":"colon"},{"r1":65,"c1":1,"r2":65,"c2":1,"bd":{"l":"thin"},"fs":8.0},{"r1":65,"c1":57,"r2":65,"c2":57,"bd":{"r":"thin"},"fs":8.0,"b":1,"v":"top","w":1,"nf":"colon"},{"r1":66,"c1":1,"r2":66,"c2":1,"bd":{"l":"thin"},"fs":8.0},{"r1":66,"c1":57,"r2":66,"c2":57,"bd":{"r":"thin"},"fs":8.0,"b":1,"v":"top","w":1,"nf":"colon"},{"r1":67,"c1":1,"r2":67,"c2":1,"bd":{"l":"thin"},"fs":10.0,"b":1,"h":"left","v":"center"},{"r1":67,"c1":57,"r2":67,"c2":57,"bd":{"r":"thin"},"fs":8.0,"b":1,"h":"left","v":"center"},{"r1":68,"c1":1,"r2":71,"c2":4,"k":"t","mg":1,"x":"Catatan/ Info Tambahan PIC Vertel:","bd":{"t":"thin","l":"thin"},"fs":8.0,"b":1,"h":"left","v":"top","w":1},{"r1":68,"c1":5,"r2":71,"c2":56,"k":"f","mg":1,"id":142,"u":1,"bd":{"t":"thin","b":"dotted"},"bg":"#E8E8E8","fs":8.0,"h":"left","v":"top","w":1},{"r1":68,"c1":57,"r2":68,"c2":57,"bd":{"t":"thin","r":"thin"},"fs":8.0},{"r1":69,"c1":57,"r2":69,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":70,"c1":57,"r2":70,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":71,"c1":57,"r2":71,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":72,"c1":1,"r2":72,"c2":1,"bd":{"l":"thin"},"fs":8.0},{"r1":72,"c1":57,"r2":72,"c2":57,"bd":{"r":"thin"},"fs":8.0},{"r1":73,"c1":1,"r2":73,"c2":8,"k":"t","mg":1,"x":"Nama PIC Vertel","bd":{"t":"thin","l":"thin"},"fs":10.0,"b":1,"h":"left","nf":"colon"},{"r1":73,"c1":9,"r2":73,"c2":24,"k":"f","mg":1,"id":1,"u":1,"bd":{"t":"thin"},"fs":10.0,"h":"left"},{"r1":73,"c1":25,"r2":73,"c2":25,"bd":{"t":"thin"},"fs":8.0},{"r1":73,"c1":26,"r2":73,"c2":26,"bd":{"t":"thin"},"fs":8.0},{"r1":73,"c1":27,"r2":73,"c2":27,"bd":{"t":"thin"},"fs":8.0},{"r1":73,"c1":28,"r2":73,"c2":36,"k":"t","mg":1,"x":"Rekomendasi PIC Vertel:","bd":{"t":"thin"},"fs":10.0,"b":1,"h":"left","v":"top","w":1,"nf":"colon"},{"r1":73,"c1":37,"r2":73,"c2":56,"k":"f","mg":1,"id":145,"bd":{"t":"thin"},"fs":10.0,"h":"left","v":"top","w":1},{"r1":73,"c1":57,"r2":73,"c2":57,"bd":{"t":"thin","r":"thin"},"fs":8.0},{"r1":74,"c1":1,"r2":74,"c2":8,"k":"t","mg":1,"x":"Jabatan PIC Vertel","bd":{"l":"thin","b":"thin"},"fs":10.0,"b":1,"h":"left","v":"top","nf":"colon"},{"r1":74,"c1":9,"r2":74,"c2":12,"k":"f","mg":1,"id":2,"u":1,"bd":{"b":"thin"},"fs":10.0,"h":"left","v":"top","w":1},{"r1":74,"c1":13,"r2":74,"c2":26,"k":"f","mg":1,"id":3,"u":1,"bd":{"b":"thin"},"fs":10.0,"h":"left","v":"top","w":1},{"r1":74,"c1":27,"r2":74,"c2":27,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":28,"r2":74,"c2":28,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":29,"r2":74,"c2":29,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":30,"r2":74,"c2":30,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":31,"r2":74,"c2":31,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":32,"r2":74,"c2":32,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":33,"r2":74,"c2":33,"bd":{"b":"thin"},"fs":10.0,"v":"top","w":1},{"r1":74,"c1":34,"r2":74,"c2":34,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":35,"r2":74,"c2":35,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":36,"r2":74,"c2":36,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":37,"r2":74,"c2":37,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":38,"r2":74,"c2":38,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":39,"r2":74,"c2":39,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":40,"r2":74,"c2":40,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":41,"r2":74,"c2":41,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":42,"r2":74,"c2":42,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":43,"r2":74,"c2":43,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":44,"r2":74,"c2":44,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":45,"r2":74,"c2":45,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":46,"r2":74,"c2":46,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":47,"r2":74,"c2":47,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":48,"r2":74,"c2":48,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":49,"r2":74,"c2":49,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":50,"r2":74,"c2":50,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":51,"r2":74,"c2":51,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":52,"r2":74,"c2":52,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":53,"r2":74,"c2":53,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":54,"r2":74,"c2":54,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":55,"r2":74,"c2":55,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":56,"r2":74,"c2":56,"bd":{"b":"thin"},"fs":8.0},{"r1":74,"c1":57,"r2":74,"c2":57,"bd":{"b":"thin","r":"thin"},"fs":8.0}]};
+const FD={"fields":[{"id":0,"l":"DATA PIC VERTEL"},{"id":1,"l":"Nama Lengkap PIC Vertel"},{"id":2,"l":"Jabatan PIC Vertel","list":"List09"},{"id":3,"l":"Jika \"Lainnya\", Isikan Apa Nama Jabatannya"},{"id":5,"l":"DATA APLIKASI"},{"id":6,"l":"No. Order"},{"id":7,"l":"No. Aplikasi"},{"id":8,"l":"Cabang"},{"id":9,"l":"MUFnet"},{"id":10,"l":"Nama Calon Debitur"},{"id":11,"l":"Jenis Aplikasi","list":"List03"},{"id":12,"l":"Portofolio","list":"List04"},{"id":13,"l":"Tipe Pembiayaan","list":"List05"},{"id":15,"l":"DATA PIC SURVEY"},{"id":16,"l":"NIK CMO/CRO/BRO"},{"id":17,"l":"Nama CMO/CRO/BRO"},{"id":19,"l":"HASIL VERTEL"},{"id":20,"l":"VERTEL BICARA DENGAN: PEMOHON LANGSUNG (CALON DEBITUR)"},{"id":21,"l":"Tanggal Vertel"},{"id":22,"l":"Jam Vertel"},{"id":23,"l":"No Telpon Yang Dihubungi","list":"List01"},{"id":24,"l":"Berbicara Dengan","list":"List11"},{"id":25,"l":"Jika \"Lainnya\", Isikan Apa Hasil Vertel-nya"},{"id":26,"l":"Benar Mengajukan Pembiayaan di MUF","list":"List06"},{"id":27,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":28,"l":"Kelengkapan dokumen persyaratan kredit yang sudah diserahkan ke MUF","list":"List06"},{"id":29,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":30,"l":"Alamat Tinggal/Domisili","list":"List06"},{"id":31,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":32,"l":"Lama Tinggal Di Alamat Domisili (Isi dengan satuan Tahun)","list":"List06"},{"id":33,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":34,"l":"Status Kepemilikan Tempat Tinggal Domisili","list":"List06"},{"id":35,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":37,"l":"Sumber Pendapatan Yang Dimiliki (Gaji/Usaha)","list":"List06"},{"id":38,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":39,"l":"Pekerjaan Yang Dimiliki","list":"List06"},{"id":40,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":41,"l":"Nama Tempat Kerja","list":"List06"},{"id":42,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":43,"l":"Jabatan  Di Tempat Kerja","list":"List06"},{"id":44,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":45,"l":"Alamat Tempat Kerja","list":"List06"},{"id":46,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":47,"l":"Total Lama Kerja (Isi dengan satuan Tahun)","list":"List06"},{"id":48,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":49,"l":"Nominal Pendapatan Per Bulan Dari Gaji","list":"List06"},{"id":50,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":52,"l":"Usaha Yang Dijalankan","list":"List06"},{"id":53,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":54,"l":"Nama Tempat Usaha","list":"List06"},{"id":55,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":56,"l":"Bidang UsahaYang Dijalankan","list":"List06"},{"id":57,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":58,"l":"Alamat Tempat Usaha","list":"List06"},{"id":59,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":60,"l":"Lama Usaha Yang Saat Ini Dijalankan (Isi dengan satuan Tahun)","list":"List06"},{"id":61,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":62,"l":"Status Kepemilikan Tempat Usaha","list":"List06"},{"id":63,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":64,"l":"Nominal Omset Usaha per Bulan","list":"List06"},{"id":65,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":66,"l":"Rekening Bank Yang Dimiliki (Mandiri/BCA/dll)"},{"id":68,"l":"Pendapatan Lainnya Calon Debitur (Kerja/Usaha)","list":"List06"},{"id":69,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":71,"l":"Status Perkawinan","list":"List06"},{"id":72,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":73,"l":"Pekerjaan/Usaha Pasangan (Jika Kawin/Menikah dan Join Income)","list":"List06"},{"id":74,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":75,"l":"Nama Tempat Kerja/Usaha Pasangan (Jika Kawin/Menikah dan Join Income)","list":"List06"},{"id":76,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":77,"l":"Nominal Pendapatan Pasangan (Jika Kawin/Menikah dan Join Income)","list":"List06"},{"id":78,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":80,"l":"Merk Kendaraan yang diajukan sesuai inputan marketing","list":"List06"},{"id":81,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":82,"l":"Model Kendaraan yang diajukan sesuai inputan marketing","list":"List06"},{"id":83,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":84,"l":"Type Kendaraan yang diajukan sesuai inputan marketing","list":"List06"},{"id":85,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":86,"l":"Tahun Kendaraan yang diajukan sesuai inputan marketing","list":"List06"},{"id":87,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":88,"l":"Jenis & Skema Pembiayaan sesuai inputan marketing","list":"List06"},{"id":89,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":90,"l":"Jangka waktu pembiayaan (tenor) sesuai inputan marketing","list":"List06"},{"id":91,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya (dalam satuan bulan)"},{"id":92,"l":"Nominal angsuran per bulan sesuai inputan marketing","list":"List06"},{"id":93,"l":"Jika \"Tidak Sesuai\", Isikan Apa Hasil Vertel-nya"},{"id":95,"l":"JIKA JENIS PEMBIAYAAN & SKEMA PEMBIAYAAN = KENDARAAN (NON DANA)"},{"id":96,"l":"Kendaraan yang diajukan sudah diterima/dikirimkan ke Calon Debitur?","list":"List07"},{"id":97,"l":"Berapa nominal DP Riil yang dibayarkan/disetorkan Calon Debitur"},{"id":98,"l":"Siapa rencana Pemakai kendaraan yang diajukan kreditnya via MUF"},{"id":99,"l":"Dimana lokasi pemakaian kendaraan yang kreditnya diajukan via MUF"},{"id":100,"l":"Apa tujuan penggunaan kendaraan yang kreditnya diajukan via MUF"},{"id":101,"l":"Untuk Pembiayaan Kendaraan Bekas: Calon Debitur sudah mengetahui Kondisi kendaraan (kelayakan unit, status pajak kendaraan, kelengkapan BPKB: ada/tidak faktur)","list":"List07"},{"id":102,"l":"Jika \"Belum\", Isikan Apa Hasil Vertel-nya"},{"id":104,"l":"JIKA JENIS PEMBIAYAAN & SKEMA PEMBIAYAAN = DANA"},{"id":105,"l":"Kendaraan yang dijaminkan benar milik Calon Debitur","list":"List08"},{"id":106,"l":"Jika \"Tidak\", Isikan Apa Hasil Vertel-nya"},{"id":107,"l":"Dana yang diajukan sudah diterima oleh Calon Debitur","list":"List08"},{"id":108,"l":"Jika \"Sudah\", Isikan Apa Hasil Vertel-nya"},{"id":109,"l":"Sudah berapa lama kendaraan yang dijaminkan dimiliki oleh Calon Debitur (Isi dengan satuan Tahun)"},{"id":110,"l":"Bagaimana cara Calon Debitur memiliki kendaraan yang dijaminkan (Beli Tunai/ Beli Kredit/ dll)"},{"id":111,"l":"Apa hubungan Nama di BPKB kendaraan yang dijaminkan dengan Calon Debitur"},{"id":112,"l":"Berapa Nilai Pencairan (Dana) yang diinfokan akan diterima Calon Debitur"},{"id":113,"l":"Apa rencana penggunaan Dana dari pengajuan kredit yang diajukannya"},{"id":115,"l":"VERTEL BICARA DENGAN: PIC/INFORMAN DI TEMPAT KERJA"},{"id":116,"l":"Tanggal Vertel"},{"id":117,"l":"Jam Vertel"},{"id":118,"l":"Nomor Telpon Yang Dihubungi"},{"id":119,"l":"Nama PIC/Informan di tempat kerja Yang Dihubungi"},{"id":120,"l":"Hubungan dengan Calon Debitur"},{"id":121,"l":"Calon Debitur benar bekerja di perusahaan tersebut (sesuai inputan marketing)","list":"List08"},{"id":122,"l":"Jika \"Tidak\", Isikan Apa Hasil Vertel-nya"},{"id":123,"l":"Jabatan Calon Debitur yang disebutkan PIC/Informan di tempat kerja benar sesuai inputan marketing","list":"List08"},{"id":124,"l":"Jika \"Tidak\", Isikan Apa Hasil Vertel-nya"},{"id":125,"l":"Status Kepegawaian Karyawan yang disebutkan PIC/Informan di tempat kerja benar sesuai seperti inputan marketing (Tetap/ Kontrak/ Honorer/ Lainnya)","list":"List08"},{"id":126,"l":"Jika \"Tidak\", Isikan Apa Hasil Vertel-nya"},{"id":127,"l":"Alamat Perusahaan yang disebutkan PIC/Informan di tempat kerja benar sesuai seperti inputan marketing","list":"List08"},{"id":128,"l":"Jika \"Tidak\", Isikan Apa Hasil Vertel-nya"},{"id":129,"l":"Lama Kerja Calon Debitur di tempat kerja saat ini sesuai informasi dari PIC/Informan di tempat kerja","list":"List08"},{"id":130,"l":"Jika \"Tidak\", Isikan Apa Hasil Vertel-nya  (Isi dengan satuan Tahun)"},{"id":131,"l":"Bagaimana Sistem/mekanisme pembayaran gaji (payroll) di sana per bulannya (Tunai/Transfer/dll)"},{"id":132,"l":"Pembayaran gaji (payroll) di sana biasanya dilakukan tiap tanggal berapa per bulannya"},{"id":134,"l":"INFORMASI TAMBAHAN HASIL PROSES VERIFIKASI TELPON KE PIHAK LAIN (JIKA ADA/DILAKUKAN)"},{"id":135,"l":"Tanggal Vertel"},{"id":136,"l":"Jam Vertel"},{"id":137,"l":"Nomor Telpon Yang Dihubungi"},{"id":138,"l":"Berbicara Dengan (Nama Informan)"},{"id":139,"l":"Apa Hubungan Informan Dengan Calon Debitur:"},{"id":140,"l":"Hasil Vertel:"},{"id":142,"l":"Catatan/Informasi Tambahan PIC Vertel:"},{"id":144,"l":"REKOMENDASI PIC VERTEL"},{"id":145,"l":"Hasil Rekomendasi PIC Vertel:","list":"List10"}],"lists":{"List01":["Rumah","Kantor/Usaha","HP Calon Debitur","HP Pasangan","HP Penjamin"],"List02":["Pasangan Calon Debitur","Anak Calon Debitur","Kakak/Adik Calon Debitur","Orang Tua Calon Debitur","Rekanan Usaha (Supplier dll) Calon Debitur","Lainnya"],"List03":["Red Flag","Non Red Flag"],"List04":["NCAR","UCAR","CAPTIVE CAR","MCAR Chanelling","MCAR Retention","NMCY","UMCY","CAPTIVE MCY","MMCY Chanelling","MMCY Retention"],"List05":["Konvensional","Syariah"],"List06":["Sesuai","Tdk Sesuai"],"List07":["Sudah","Belum"],"List08":["Ya","Tidak"],"List09":["CA","CSS","Lainnya"],"List10":["Direkomendasikan untuk dapat dibiayai","Tidak direkomendasikan untuk dapat dibiayai"],"List11":["Calon Debitur"]}};
+</script>
+<script>
+"use strict";
+/* ============ util ============ */
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,a={},...k)=>{const e=document.createElement(t);for(const[x,y]of Object.entries(a)){if(x==='class')e.className=y;else if(x==='html')e.innerHTML=y;else if(x.startsWith('on'))e.addEventListener(x.slice(2),y);else if(y!==false&&y!=null)e.setAttribute(x,y===true?'':y)}for(const c of k.flat())if(c!=null)e.append(c.nodeType?c:document.createTextNode(c));return e};
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200)}
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const rp=n=>{const x=Number(String(n).replace(/[^\d.-]/g,''));return isFinite(x)&&String(n).trim()!==''?'Rp '+x.toLocaleString('id-ID'):''};
+const pad=n=>String(n).padStart(2,'0');
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const title=s=>String(s||'').trim();
+
+/* ============ XLSX reader (tanpa library) ============ */
+async function unzip(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf);
+  let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+  if(e<0)throw new Error('Bukan file .xlsx yang valid');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={};
+  for(let i=0;i<n;i++){
+    const method=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),el_=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lho=dv.getUint32(p+42,true);
+    files[new TextDecoder().decode(u8.subarray(p+46,p+46+nl))]={method,cs,lho};p+=46+nl+el_+cl;
+  }
+  return async name=>{
+    const f=files[name];if(!f)return null;
+    const lnl=dv.getUint16(f.lho+26,true),lel=dv.getUint16(f.lho+28,true),s=f.lho+30+lnl+lel,d=u8.subarray(s,s+f.cs);
+    if(f.method===0)return d;
+    const st=new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(st).arrayBuffer());
+  };
+}
+const xml=async(rd,name)=>{const d=await rd(name);return d?new DOMParser().parseFromString(new TextDecoder().decode(d),'application/xml'):null};
+async function readXlsx(buf){
+  const rd=await unzip(buf);
+  const wbx=await xml(rd,'xl/workbook.xml'),rels=await xml(rd,'xl/_rels/workbook.xml.rels');
+  const relMap={};for(const r of rels.getElementsByTagName('Relationship'))relMap[r.getAttribute('Id')]=r.getAttribute('Target');
+  const ss=[];const sx=await xml(rd,'xl/sharedStrings.xml');
+  if(sx)for(const si of sx.getElementsByTagName('si')){let s='';const walk=n=>{for(const c of n.childNodes){if(c.nodeName==='t')s+=c.textContent;else if(c.nodeName==='r'){for(const t of c.childNodes)if(t.nodeName==='t')s+=t.textContent}}};walk(si);ss.push(s)}
+  const sheets=[];
+  for(const s of wbx.getElementsByTagName('sheet')){
+    const name=s.getAttribute('name'),rid=s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id')||s.getAttribute('r:id');
+    let t=relMap[rid];t=t.startsWith('/')?t.slice(1):'xl/'+t.replace(/^\.\//,'');
+    const sd=await xml(rd,t);const cells=new Map();
+    for(const c of sd.getElementsByTagName('c')){
+      const r=c.getAttribute('r'),ty=c.getAttribute('t');let v=null;
+      if(ty==='inlineStr'){v=[...c.getElementsByTagName('t')].map(x=>x.textContent).join('')}
+      else{const ve=c.getElementsByTagName('v')[0];if(ve){v=ve.textContent;if(ty==='s')v=ss[+v];else if(ty==='b')v=v==='1';else if(ty!=='str'&&ty!=='e'&&v!==''&&!isNaN(v))v=Number(v)}}
+      if(v!==null&&v!=='')cells.set(r,v);
+    }
+    sheets.push({name,cells});
+  }
+  return sheets;
+}
+const colN=s=>{let n=0;for(const ch of s)n=n*26+ch.charCodeAt(0)-64;return n};
+const colL=n=>{let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s};
+const splitAddr=a=>{const m=/^([A-Z]+)(\d+)$/.exec(a);return[colN(m[1]),+m[2]]};
+const addr=(c,r)=>colL(c)+r;
+
+/* ============ Summary parser ============ */
+// [kunci, halaman, label, alamatLabel, alamatNilai]
+const SPEC=[
+ ['noOrder',1,'Nomor Order','D13','F13'],['noApp',1,'Nomor Aplikasi','D14','F14'],['nama',1,'Nama Nasabah','D16','F16'],
+ ['cabang',1,'Cabang','D18','F18'],['salesName',1,'Internal Sales Force','D20','F20'],['salesJob',1,'Internal Sales Job','D21','F21'],
+ ['ktp',1,'No KTP Nasabah','D24','F24'],['hp1',1,'No. HP 1','D39','F39'],['statusKawin',1,'Status Perkawinan','D29','F29'],
+ ['namaPasangan',1,'Nama Pasangan','D44','F44'],['hpPasangan',1,'No. HP Pasangan','D50','F50'],
+ ['statusRumah',1,'Status Kepemilikan Rumah','D53','F53'],['lamaTinggal',1,'Lama Tinggal','D54','F54'],
+ ['pekerjaan',1,'Pekerjaan','J12','L12'],['bidangUsaha',1,'Bidang Usaha','J13','L13'],['lamaUsaha',1,'Total Lama Usaha','J14','L14'],
+ ['pekerjaanPasangan',1,'Pekerjaan Pasangan','J15','L15'],['omzet',1,'Pendapatan / Omzet Usaha','J17','M17'],
+ ['pendLain',1,'Pendapatan Lainnya Nasabah','J22','M22'],['pendPasangan',1,'Pendapatan Perbulan Pasangan','J23','M23'],
+ ['channel',1,'Jenis Channel','J34','L34'],['outlet',1,'Outlet Channel','J35','L35'],['tipePembiayaan',1,'Tipe Pembiayaan','J36','L36'],
+ ['jenisPembiayaan',1,'Jenis Pembiayaan','J37','L37'],['skema',1,'Skema Pembiayaan','J38','L38'],['tujuanUnit',1,'Tujuan Penggunaan Unit','J39','L39'],
+ ['tujuanPembiayaan',1,'Tujuan Pembiayaan','J40','L40'],['sifat',1,'Sifat Pembiayaan','J41','L41'],['jenisKendaraan',1,'Jenis Kendaraan','J46','L46'],
+ ['merk',1,'Merk Objek','J47','L47'],['model',1,'Model Objek','J48','L48'],['type',1,'Type','J49','L49'],['subtype',1,'Sub Type Kendaraan','J50','L50'],
+ ['tahun',1,'Tahun Pembuatan','J54','L54'],['bpkbIdentitas',1,'Identitas BPKB','J55','L55'],['bpkbHubungan',1,'Hubungan Dengan Nasabah','J56','L56'],
+ ['bpkbNama',1,'Nama Tercantum di BPKB','J57','L57'],['tenor',1,'Tenor','J58','L58'],
+ ['harga',1,'Harga Kendaraan','P17','X17'],['dpGross',1,'DP Gross','P19','X19'],['dpNet',1,'DP Net','P20','X20'],['dpPct',1,'DP Net','P20','T20'],
+ ['pokok',1,'Pokok Hutang / Pokok Pembiayaan','P21','X21'],['angsuran',1,'Angsuran / Bulan','P41','X41'],
+ ['alamat',3,'Alamat Domisili','G11','I11'],['kel',3,'Alamat Domisili','G11','I12'],['kec',3,'Alamat Domisili','G11','I13'],['kota',3,'Alamat Domisili','G11','I14'],
+ ['domSesuai',3,'Alamat Domisili Sesuai Input Awal','G16','I16'],['hubRumah',3,'Hubungan Antara Nasabah dengan Pemilik Rumah','G17','I17'],
+ ['alamatKerja',3,'Alamat Tempat Bekerja','M11','O11'],['kelKerja',3,'Alamat Tempat Bekerja','M11','O12'],['kecKerja',3,'Alamat Tempat Bekerja','M11','O13'],['kotaKerja',3,'Alamat Tempat Bekerja','M11','O14'],
+ ['inf1',3,'Nama Informan','G22','I22'],['inf1h',3,'Informan - 1 dengan Nasabah','G23','I23'],
+ ['inf2',3,'Nama Informan','G22','L22'],['inf2h',3,'Informan - 1 dengan Nasabah','G23','L23'],
+ ['inf3',3,'Nama Informan','G22','O22'],['inf3h',3,'Informan - 1 dengan Nasabah','G23','O23'],
+ ['emNama',4,'Nama Emergency Contact','L21','N21'],['emHub',4,'Hubungan Dengan Nasabah','L22','N22'],['emHp1',4,'No. HP 1/ No. Telephone Emergency Contact','L23','N23'],
+ ['emHp2',4,'No. HP 2/ No. Telephone Emergency Contact','L24','N24'],['emAlamat',4,'Alamat Emergency Contact','L25','N25'],
+];
+function parseSummary(sheets){
+  const S={},warn=[];let found=0,total=0;
+  const sh=n=>sheets.find(s=>new RegExp('^Halaman\\s*'+n+'\\b','i').test(s.name));
+  const norm=x=>String(x??'').replace(/\s+/g,' ').trim().toLowerCase();
+  for(const[key,pg,label,la,va]of SPEC){
+    const s=sh(pg);if(!s){if(!warn.includes('Halaman '+pg))warn.push('Halaman '+pg);continue}
+    let la2=la,dc=0,dr=0;[dc,dr]=splitAddr(va);const[lc,lr]=splitAddr(la);dc-=lc;dr-=lr;
+    let ok=norm(s.cells.get(la))===norm(label);
+    if(!ok){for(const[a,v]of s.cells)if(norm(v)===norm(label)){la2=a;ok=true;break}}
+    total++;
+    if(!ok){warn.push(label);continue}
+    const[c2,r2]=splitAddr(la2);const v=s.cells.get(addr(c2+dc,r2+dr));
+    if(v!==undefined&&String(v).trim()!==''&&String(v).trim()!==':'){S[key]=typeof v==='string'?v.trim():v;found++}
+  }
+  S._warn=warn;S._found=found;S._total=total;
+  S._survey=(sh(3)?.cells.get('C8')||sh(4)?.cells.get('C9')||'')+'';
+  return S;
+}
+
+/* ============ field model ============ */
+const FIELDS=FD.fields,LISTS=FD.lists;const FBY=new Map(FIELDS.map(f=>[f.id,f]));
+const HEADERS=new Set([0,5,15,19,20,95,104,115,134,144]);
+const DATE=new Set([21,116,135]),TIME=new Set([22,117,136]),NUM=new Set([97,112]);
+const LONG=id=>{const f=FBY.get(id);return /^Jika "/.test(f.l)||[140,142].includes(id)};
+const COND={};for(const f of FIELDS){const m=/^Jika "([^"]+)"/.exec(f.l);if(m)COND[f.id]={p:f.id-1,v:m[1]==='Tidak Sesuai'?'Tdk Sesuai':m[1]}}
+const V={};let FILLED_FROM_SUMMARY=new Set();
+const PICIDS=[1,2,3];
+const AUTOHIDE=new Set([6,7,13,23,80,82,84,86,88,90,92,97,98,100]);
+const JOBS=['WIRASWASTA','KARYAWAN FORMAL','TNI/POLRI','ASN','BADAN USAHA'];
+const WORKPLACE=['KARYAWAN FORMAL','TNI/POLRI','ASN'];
+let SHOWAUTO=false,autoHasil='',EDITPIC=false,allOkOn=false,timeAuto=true;
+const allOkSet=new Set();
+const hm=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const QUICK=[11,12,13,16,66,96,101,102];
+const PICCARD=[1,2,3,8,9];
+const OKSCOPE=FIELDS.filter(f=>f.list==='List06'&&((f.id>=26&&f.id<=77&&![68,73,75,77].includes(f.id))||(f.id>=80&&f.id<=92))).map(f=>f.id);
+const EXC=FIELDS.filter(f=>f.id>=26&&f.id<=77&&f.id!==66).map(f=>f.id);
+const WORK=FIELDS.filter(f=>f.id>=116&&f.id<=132).map(f=>f.id);
+const WORKOK=FIELDS.filter(f=>f.id>=121&&f.id<=129&&f.list==='List08').map(f=>f.id);
+const DANA=FIELDS.filter(f=>f.id>=105&&f.id<=113).map(f=>f.id);
+const INFO=FIELDS.filter(f=>f.id>=135&&f.id<=140).map(f=>f.id);
+function applyAllOk(on){
+  if(on){for(const id of OKSCOPE)if(!V[id]){V[id]='Sesuai';allOkSet.add(id)}}
+  else{for(const id of allOkSet)if(V[id]==='Sesuai')delete V[id];allOkSet.clear()}
+}
+function resetAllOk(){allOkOn=false;allOkSet.clear()}
+const nikMap=()=>{try{return JSON.parse(lsGet('vertel.nik')||'{}')}catch(e){return{}}};
+function defaults(){V[22]=hm();timeAuto=true;V[21]=todayISO();V[24]='Calon Debitur';V[23]='HP Calon Debitur';V[99]='DOMISILI';V[145]='Direkomendasikan untuk dapat dibiayai';V[142]='SESUAI'}
+function detectJob(p){const s=String(p||'').toUpperCase();
+  if(/WIRASWASTA|WIRAUSAHA/.test(s))return 'WIRASWASTA';if(/TNI|POLRI/.test(s))return 'TNI/POLRI';
+  if(/\bASN\b|\bPNS\b|PEGAWAI NEGERI/.test(s))return 'ASN';if(/BADAN USAHA/.test(s))return 'BADAN USAHA';
+  if(/KARYAWAN|PEGAWAI/.test(s))return 'KARYAWAN FORMAL';return ''}
+function hasilText(){
+  if(!S)return '';
+  const up=x=>String(x||'').toUpperCase().trim(),b=up(S.bidangUsaha),pk=up(S.pekerjaan),job=V.job;
+  let d='';
+  if(job==='WIRASWASTA'||job==='BADAN USAHA')d=(b||pk)?'YBS USAHA '+(b||pk):'';
+  else{const nm=(pk&&(!job||detectJob(pk)===job))?pk:job;d=nm?'YBS BEKERJA SEBAGAI '+nm+(b?' ('+b+')':''):''}
+  const rumah=S.statusRumah?'RUMAH '+up(S.statusRumah)+'.':'';
+  return ['SESUAI'+(d?', '+d:'')+'.',rumah].filter(Boolean).join(' ');
+}
+function applyHasil(){const t=hasilText();if(!t)return;if(!V[140]||V[140]===autoHasil){V[140]=t;autoHasil=t}}
+const CORE=[1,2,6,7,8,10,11,12,13,16,17,21,22,23,24,26,28,30,32,34,37,71,80,82,84,86,88,90,92,145];
+const NOTSUM=[[9,'MUFnet'],[11,'Jenis Aplikasi (Red Flag / Non Red Flag)'],[12,'Portofolio'],[16,'NIK CMO/CRO/BRO'],[54,'Nama Tempat Usaha'],[62,'Status Kepemilikan Tempat Usaha'],[66,'Rekening Bank yang Dimiliki'],[75,'Nama Tempat Kerja/Usaha Pasangan'],[137,'No. Telepon pihak lain / informan']];
+
+/* ============ laporan (replika sheet Print) ============ */
+const MDW=6.6,PADC=5;
+const colpx=LAYOUT.cols.map(w=>w*MDW+PADC),rowpx=LAYOUT.rows.map(h=>h*96/72);
+const SW=colpx.reduce((a,b)=>a+b,0),SH=rowpx.reduce((a,b)=>a+b,0);
+const BSTYLE={thin:'1px solid #000',hair:'1px dotted #444',dotted:'1px dotted #000',dashed:'1px dashed #000',medium:'2px solid #000',thick:'3px solid #000',double:'3px double #000',mediumDashed:'2px dashed #000'};
+const fmtDate=v=>{const s=String(v);const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);return m?`${m[3]}/${m[2]}/${m[1]}`:s};
+const fmtNum=v=>{const s=String(v).trim();if(!/^[\d.,\s]+$/.test(s))return s;const d=s.replace(/[^\d]/g,'');return d===''?s:Number(d).toLocaleString('id-ID')};
+const dyn=[];
+function buildReport(){
+  const sheet=$('#sheet');sheet.style.width=SW+'px';sheet.style.height=SH+'px';
+  sheet.style.gridTemplateColumns=colpx.map(x=>x+'px').join(' ');sheet.style.gridTemplateRows=rowpx.map(x=>x+'px').join(' ');
+  const R={},B={};
+  for(const c of LAYOUT.cells){if(!c.bd)continue;
+    if(c.bd.r)for(let r=c.r1;r<=c.r2;r++)R[r+','+c.c2]=1;
+    if(c.bd.b)for(let k=c.c1;k<=c.c2;k++)B[c.r2+','+k]=1}
+  const frag=document.createDocumentFragment();
+  for(const c of LAYOUT.cells){
+    const d=el('div',{class:'c'+(c.w?' w':'')+(c.nf==='colon'?' col':'')+((!c.mg&&!c.w&&c.nf!=='colon'&&(c.h||'left')==='left')?' sp':'')});
+    const s=d.style;s.gridArea=`${c.r1}/${c.c1}/${c.r2+1}/${c.c2+1}`;
+    if(c.bg)s.background=c.bg;
+    s.fontSize=((c.fs||8)*96/72)+'px';if(c.b)s.fontWeight='700';if(c.i)s.fontStyle='italic';
+    s.alignItems=c.v==='center'?'center':c.v==='top'?'flex-start':'flex-end';
+    const ta=c.h==='center'?'center':c.h==='right'?'right':'left';
+    if(c.ind)s.paddingLeft=(2+c.ind*6)+'px';
+    if(c.bd){
+      const b=c.bd;
+      if(b.t&&!B[(c.r1-1)+','+c.c1])s.borderTop=BSTYLE[b.t]||BSTYLE.thin;
+      if(b.b)s.borderBottom=BSTYLE[b.b]||BSTYLE.thin;
+      if(b.l&&!R[c.r1+','+(c.c1-1)])s.borderLeft=BSTYLE[b.l]||BSTYLE.thin;
+      if(b.r)s.borderRight=BSTYLE[b.r]||BSTYLE.thin;
+    }
+    const t=el('span',{class:'t'});t.style.textAlign=ta;
+    if(c.k==='t'){
+      if(c.nf==='colon'){t.append(el('span',{},c.x),el('span',{},':'))}else t.textContent=c.x;
+    }else if(c.k==='f'){dyn.push([c,t,d])}
+    d.append(t);frag.append(d);
+  }
+  sheet.append(frag);
+}
+function showVal(c){
+  let v=V[c.id];if(v==null||v===''||v==='- Silahkan Pilih -')return '';
+  if(c.nf==='date')v=fmtDate(v);else if(c.nf==='num')v=fmtNum(v);
+  v=String(v);return c.u?v.toUpperCase():v;
+}
+function fitCell(d,t){
+  const base=parseFloat(d.dataset.fs||(d.dataset.fs=parseFloat(getComputedStyle(d).fontSize)));let s=base,n=0;d.style.fontSize=base+'px';
+  while(n<8&&s>base*.6&&(d.scrollHeight>d.clientHeight+1||t.scrollWidth>t.clientWidth+1)){s*=.92;d.style.fontSize=s+'px';n++}
+}
+function refreshReport(){for(const[c,t,d]of dyn){const s=showVal(c);if(t.textContent!==s){t.textContent=s;if(!d.classList.contains('sp'))fitCell(d,t)}}}
+let curScale=1;
+function fitPaper(printMode){
+  const paper=$('#paper'),sheet=$('#sheet');let z;
+  if(printMode){z=Math.min((8.5*96-19.2)/SW,(11*96-19.2)/SH);}
+  else{const w=Math.max(280,$('#paperwrap').clientWidth-20);z=w/SW}
+  curScale=z;sheet.style.transform=`scale(${z})`;paper.style.width=(SW*z)+'px';paper.style.height=(SH*z)+'px';
+}
+
+/* ============ hints dari Summary ============ */
+let S=null;
+function hintMap(){
+  const H={};if(!S)return H;
+  const J=(...a)=>a.filter(x=>x!=null&&String(x).trim()!=='').join(' · ');
+  const alamat=[S.alamat,S.kel&&'Kel. '+S.kel,S.kec&&'Kec. '+S.kec,S.kota].filter(Boolean).join(', ');
+  const alamatK=[S.alamatKerja,S.kelKerja&&'Kel. '+S.kelKerja,S.kecKerja&&'Kec. '+S.kecKerja,S.kotaKerja].filter(Boolean).join(', ');
+  const dpPct=S.dpPct!=null&&!isNaN(S.dpPct)?(Number(S.dpPct)*100).toFixed(1).replace('.',',')+'%':'';
+  const sum=(t,chips)=>({t,chips});
+  H[13]=sum(S.tipePembiayaan&&'Summary: '+S.tipePembiayaan);
+  H[17]=sum(S.salesName&&J('Summary (Internal Sales Force): '+S.salesName,S.salesJob));
+  H[9]={none:'Tidak ada di Summary'};H[11]={none:'Tidak ada di Summary'};H[16]={none:'Tidak ada di Summary. Cukup diketik sekali, nanti diingat untuk CMO '+(S.salesName||'ini')};
+  const map={'MOTOR BARU':'NMCY','MOTOR BEKAS':'UMCY','MOBIL BARU':'NCAR','MOBIL BEKAS':'UCAR'}[String(S.jenisKendaraan||'').toUpperCase()];
+  H[12]={none:'Tidak ada di Summary',t:J(S.jenisKendaraan,S.channel,S.outlet&&('Outlet '+S.outlet)),chips:map?[[`Saran: ${map} (cek bila dealer captive/channelling)`,map]]:[]};
+  H[23]=sum(J(S.hp1&&'HP Calon Debitur '+S.hp1,S.hpPasangan&&'HP Pasangan '+S.hpPasangan));
+  H[30]=sum(alamat&&'Summary: '+alamat+(S.domSesuai?' (sesuai input awal: '+S.domSesuai+')':''));
+  H[32]=sum(S.lamaTinggal&&'Summary: '+S.lamaTinggal);
+  H[34]=sum(S.statusRumah&&J('Summary: '+S.statusRumah,S.hubRumah&&'pemilik rumah: '+S.hubRumah));
+  H[37]=sum(S.pekerjaan&&J('Summary: pekerjaan '+S.pekerjaan,S.bidangUsaha));
+  H[39]=sum(S.pekerjaan&&'Summary: '+S.pekerjaan);
+  H[45]=sum(alamatK&&'Summary: '+alamatK);
+  H[52]=sum(S.pekerjaan&&/wiraswasta|usaha/i.test(S.pekerjaan)?'Wiraswasta — biasanya dikosongkan/ikut usaha':'');
+  H[54]={none:'Tidak ada di Summary'};
+  H[56]=sum(S.bidangUsaha&&'Summary: '+S.bidangUsaha);
+  H[58]=sum(alamatK&&'Summary (alamat tempat bekerja): '+alamatK);
+  H[60]=sum(S.lamaUsaha&&'Summary: '+S.lamaUsaha);
+  H[62]={none:'Tidak ada di Summary'};
+  H[64]=sum(S.omzet!=null&&'Summary: '+rp(S.omzet)+' per bulan');
+  H[66]={none:'Tidak ada di Summary'};
+  H[68]=sum(S.pendLain!=null&&'Summary: '+(Number(S.pendLain)?rp(S.pendLain):'tidak ada pendapatan lain'));
+  H[71]=sum(S.statusKawin&&'Summary: '+S.statusKawin+(S.namaPasangan?' (pasangan: '+S.namaPasangan+')':''));
+  H[73]=sum('Summary: '+(S.pekerjaanPasangan||'kosong'));
+  H[75]={none:'Tidak ada di Summary'};
+  H[77]=sum(S.pendPasangan!=null&&'Summary: '+(Number(S.pendPasangan)?rp(S.pendPasangan):'tidak ada pendapatan pasangan'));
+  H[80]=sum(S.merk&&'Summary: '+S.merk);H[82]=sum(S.model&&'Summary: '+S.model);
+  H[84]=sum(S.type&&J('Summary: '+S.type,S.subtype));H[86]=sum(S.tahun&&'Summary: '+S.tahun);
+  H[88]=sum(J(S.jenisPembiayaan&&'Summary: '+S.jenisPembiayaan,S.skema&&'skema '+S.skema,S.tujuanPembiayaan&&'tujuan '+S.tujuanPembiayaan));
+  H[90]=sum(S.tenor&&'Summary: '+S.tenor+' bulan');H[92]=sum(S.angsuran!=null&&'Summary: '+rp(S.angsuran)+' per bulan');
+  H[96]=sum(S.jenisKendaraan&&'Summary: '+S.jenisKendaraan+' dari '+(S.channel||'-'));
+  H[97]=sum(J(S.dpGross!=null&&'Summary: DP Gross '+rp(S.dpGross),S.dpNet!=null&&'DP Net '+rp(S.dpNet)+(dpPct?' ('+dpPct+')':'')),S.dpGross!=null?[['Pakai DP Net',String(S.dpNet??S.dpGross)]]:[]);
+  H[98]=sum(S.tujuanUnit&&'Summary tujuan penggunaan unit: '+S.tujuanUnit,S.tujuanUnit?[[S.tujuanUnit,String(S.tujuanUnit).toUpperCase()]]:[]);
+  H[100]=sum(S.tujuanPembiayaan&&J('Summary: tujuan '+S.tujuanPembiayaan,S.sifat&&'sifat '+S.sifat));
+  H[101]=sum(S.jenisKendaraan&&(/BARU/i.test(S.jenisKendaraan)?'Unit '+S.jenisKendaraan+' → pertanyaan ini tidak perlu diisi':'Unit '+S.jenisKendaraan));
+  H[111]=sum(S.bpkbNama&&J('Summary: nama di BPKB '+S.bpkbNama,S.bpkbHubungan&&'hubungan '+S.bpkbHubungan,S.bpkbIdentitas));
+  H[137]={none:'Tidak ada di Summary'+(S.emHp1?'':' (Emergency Contact di Halaman 4 kosong)'),t:S.emHp1?'Emergency Contact: '+J(S.emNama,S.emHub,S.emHp1,S.emHp2):'',chips:S.emHp1?[['Pakai '+S.emHp1,S.emHp1]]:[]};
+  const infs=[[S.inf1,S.inf1h],[S.inf2,S.inf2h],[S.inf3,S.inf3h]].filter(x=>x[0]);
+  const names=[],rels=[];
+  if(S.emNama){names.push([S.emNama,'Emergency Contact: '+S.emNama]);}
+  for(const[n,h]of infs)names.push([String(n).toUpperCase(),'Informan survey: '+n+(h?' ('+h+')':'')]);
+  H[138]={t:names.length?'Dari Summary — ':'' ,chips:names.map(([n,l])=>[l,n])};
+  const hubs=[];if(S.emHub)hubs.push(['Emergency: '+S.emHub,String(S.emHub).toUpperCase()]);for(const[n,h]of infs)if(h)hubs.push([n+': '+h,String(h).toUpperCase()]);
+  H[139]={t:hubs.length?'Dari Summary — ':'',chips:hubs};
+  return H;
+}
+
+/* ============ form ============ */
+const rowEls=new Map();
+function setV(id,v,from){V[id]=v;if(PICIDS.includes(id))savePic();}
+function savePic(){lsSet('vertel.pic',JSON.stringify({1:V[1]||'',2:V[2]||'',3:V[3]||''}))}
+function loadPic(){try{const o=JSON.parse(lsGet('vertel.pic')||'{}');for(const k of PICIDS)if(o[k])V[k]=o[k]}catch(e){}}
+
+function controlFor(f){
+  const id=f.id;
+  if(f.list){
+    const opts=LISTS[f.list],long=opts.some(o=>o.length>18),seg=opts.length<=3&&!long;
+    if(seg){
+      const w=el('div',{class:'seg','data-id':id});
+      for(const o of opts)w.append(el('button',{type:'button','data-v':o,class:o==='Tdk Sesuai'?'bad':''},o));
+      w.append(el('button',{type:'button','data-v':'',title:'Kosongkan',style:'color:var(--mute)'},'—'));
+      return w;
+    }
+    const s=el('select',{'data-id':id},el('option',{value:''},'— pilih —'),opts.map(o=>el('option',{value:o},o)));return s;
+  }
+  if(DATE.has(id))return el('input',{type:'date','data-id':id});
+  if(TIME.has(id))return el('input',{type:'time','data-id':id});
+  if(LONG(id))return el('textarea',{'data-id':id,rows:2});
+  return el('input',{type:'text','data-id':id,inputmode:(NUM.has(id)||id===16)?'numeric':null,autocomplete:'off'});
+}
+function buildForm(){
+  const host=$('#formHost');host.innerHTML='';rowEls.clear();
+  for(const f of FIELDS){
+    if(HEADERS.has(f.id))continue;
+    const r=el('div',{class:'row'+(COND[f.id]?' sub':''),'data-row':f.id});
+    r.append(el('div',{class:'lab'},f.l,el('span',{class:'num'},'#'+f.id)),controlFor(f),el('div',{class:'hint',hidden:true,'data-hint':f.id}));
+    rowEls.set(f.id,r);
+  }
+  const mk=(key,title,ids,o={})=>{
+    const d=el('details',{class:'card',open:o.open!==false,'data-card':key});
+    const sm=el('summary',{},title);if(o.tag)sm.append(el('span',{class:'opt'},o.tag));if(o.sumId)sm.firstChild.parentNode.id=o.sumId;
+    const body=el('div');d.append(sm,body);
+    for(const x of(o.pre||[]))body.append(x);
+    for(const id of ids){const r=rowEls.get(id);if(r)body.append(r)}
+    for(const x of(o.post||[]))body.append(x);
+    host.append(d);return d;
+  };
+  // 1. isi cepat
+  const sg=el('div',{class:'seg'});for(const j of JOBS)sg.append(el('button',{type:'button','data-j':j},j));
+  const jobRow=el('div',{class:'row'},el('div',{class:'lab'},'Pekerjaan debitur'),sg,el('div',{class:'hint'},'Terdeteksi dari Summary. Karyawan formal, TNI/POLRI, ASN akan memunculkan vertel ke tempat kerja.'));
+  mk('pic','PIC Vertel & cabang',PICCARD,{pre:[el('div',{class:'hint','data-picline':1,hidden:true})]});
+  mk('quick','Isi cepat',QUICK,{pre:[jobRow]});
+  // 2. verifikasi
+  const chk=el('label',{style:'display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:14px;font-weight:600'},el('input',{type:'checkbox',id:'allOk',style:'margin-top:3px;width:18px;height:18px'}),el('span',{},'Semua yang saya tanyakan sudah Sesuai'));
+  const note=el('div',{class:'hint',style:'margin-top:6px'},'Centang setelah selesai menelepon. Kalau ada yang tidak sesuai, tandai di kotak bawah.');
+  mk('verif','Verifikasi hasil telepon',[],{pre:[chk,note]});
+  mk('exc','Ada yang tidak sesuai? Tandai di sini',EXC,{open:false,sumId:'excSum'});
+  // 3. tempat kerja (karyawan)
+  const bw=el('button',{type:'button',onclick:()=>{for(const id of WORKOK)if(!V[id])V[id]='Ya';syncForm();refreshReport();updateStatus();toast('Terisi "Ya" untuk isian yang masih kosong')}},'Tandai semua "Ya"');
+  mk('work',FBY.get(115).l,WORK,{pre:[el('div',{class:'tools'},bw)]});
+  // 4. info pihak lain (selalu terbuka)
+  mk('info','Informasi tambahan: telepon ke pihak lain',INFO);
+  // 5. dana
+  mk('dana','Jika pembiayaan Dana',DANA,{open:false,tag:'opsional'});
+  // 6. otomatis
+  const placed=new Set([...PICCARD,...QUICK,...EXC,...WORK,...DANA,...INFO]);
+  const rest=FIELDS.filter(f=>!HEADERS.has(f.id)&&!placed.has(f.id)).map(f=>f.id);
+  mk('auto','Isian otomatis (nomor order, jam, data kendaraan, DP, lokasi pemakaian, rekomendasi, dll.)',rest,{});
+}
+function syncForm(){
+  const H=hintMap();
+  for(const[id,r]of rowEls){
+    const v=V[id]??'';const c=r.querySelector('[data-id]');
+    if(c.classList.contains('seg')){for(const b of c.children){const on=b.dataset.v===v&&v!=='';b.classList.toggle('on',on)}}
+    else if(c.tagName==='INPUT'&&NUM.has(id)){if(document.activeElement!==c)c.value=v===''?'':fmtNum(v)}
+    else if(document.activeElement!==c)c.value=v;
+    if(COND[id]){const k=COND[id];r.hidden=!(V[k.p]===k.v||v)}
+    if(id===1||id===2)r.hidden=!!(V[1]&&V[2])&&!EDITPIC;
+    if(id===3)r.hidden=!(V[2]==='Lainnya'||v)||(!!(V[1]&&V[2])&&!EDITPIC);
+    if(id===101)r.hidden=!!(S&&/BARU/i.test(S.jenisKendaraan||''))&&!v;
+    const hh=r.querySelector('[data-hint]');const h=H[id];hh.innerHTML='';
+    if(h&&(h.t||h.none||(h.chips&&h.chips.length))){
+      hh.hidden=false;hh.className='hint'+((h.none&&!v)?' none':'');
+      if(h.none&&!v)hh.append(el('span',{},'⚠ '+h.none));
+      if(h.t)hh.append(el('span',{class:'src'},h.t));
+      for(const[lab,val]of(h.chips||[]))hh.append(el('button',{type:'button',class:'chip','data-chip':id,'data-val':val},lab));
+    }else hh.hidden=true;
+  }
+  for(const b of document.querySelectorAll('[data-j]'))b.classList.toggle('on',b.dataset.j===V.job);
+  const setH=(k,h)=>{const c=document.querySelector(`details[data-card="${k}"]`);if(c)c.hidden=h};
+  setH('work',!WORKPLACE.includes(V.job));
+  setH('dana',!!(S&&/KENDARAAN/i.test(S.tujuanPembiayaan||'')));
+  setH('auto',!SHOWAUTO);
+  const pl=document.querySelector('[data-picline]');
+  if(pl){const show=!!(V[1]&&V[2])&&!EDITPIC;pl.hidden=!show;pl.innerHTML='';
+    if(show)pl.append(el('span',{class:'src'},'PIC Vertel: '+V[1]+' ('+(V[2]==='Lainnya'?(V[3]||'Lainnya'):V[2])+')'),el('button',{type:'button',class:'chip','data-editpic':1},'ubah'))}
+  const nExc=EXC.filter(i=>V[i]==='Tdk Sesuai').length,es=$('#excSum');
+  if(es)es.firstChild.textContent='Ada yang tidak sesuai? Tandai di sini'+(nExc?' — '+nExc+' ditandai':'');
+  const ao=$('#allOk');if(ao)ao.checked=allOkOn;
+}
+function openFilled(){for(const k of['work','dana','info']){const d=document.querySelector(`details[data-card="${k}"]`);if(d&&!d.hidden&&[...d.querySelectorAll('[data-row]')].some(r=>V[r.dataset.row]))d.open=true}}
+function onInput(e){
+  const t=e.target.closest('[data-id]');if(!t)return;const id=+t.dataset.id;
+  if(t.classList.contains('seg'))return;
+  let v=t.value;if(NUM.has(id))v=v.replace(/[^\d]/g,'');
+  setV(id,v);
+  if(id===22)timeAuto=false;
+  if(id===16&&V[17]){const m=nikMap();m[V[17]]=v;lsSet('vertel.nik',JSON.stringify(m))}
+  if(NUM.has(id)){const pos=t.selectionStart;t.value=v===''?'':fmtNum(v)}
+  if(COND[id]===undefined)for(const k in COND)if(COND[k].p===id)syncCond(+k);
+  syncForm();refreshReport();updateStatus();updateFname(false);
+}
+function syncCond(k){const r=rowEls.get(k);const c=COND[k];if(r)r.hidden=!(V[c.p]===c.v||V[k])}
+document.addEventListener('input',onInput);
+document.addEventListener('change',e=>{
+  if(e.target.id==='allOk'){allOkOn=e.target.checked;applyAllOk(allOkOn);syncForm();refreshReport();updateStatus();toast(allOkOn?'Semua isian verifikasi ditandai Sesuai':'Tanda Sesuai otomatis dibatalkan');return}
+  if(e.target.matches('select[data-id]')){onInput(e);syncForm()}});
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-editpic]')){EDITPIC=true;syncForm();return}
+  const jb=e.target.closest('[data-j]');
+  if(jb){V.job=jb.dataset.j;applyHasil();syncForm();const c=document.querySelector('details[data-card="work"]');if(c&&!c.hidden)c.open=true;refreshReport();updateStatus();return}
+  const b=e.target.closest('.seg button');
+  if(b){const id=+b.parentElement.dataset.id;setV(id,b.dataset.v);syncForm();refreshReport();updateStatus();return}
+  const ch=e.target.closest('.chip');
+  if(ch){const id=+ch.dataset.chip;setV(id,ch.dataset.val);syncForm();refreshReport();updateStatus();updateFname(false)}
+});
+
+/* ============ status / kelengkapan ============ */
+function updateStatus(){
+  const blank=CORE.filter(id=>!V[id]);
+  const b=$('#complete');b.textContent=blank.length?`${CORE.length-blank.length}/${CORE.length} isian inti terisi`:'Isian inti lengkap';
+  b.className='badge '+(blank.length?'warn':'ok');b.title=blank.length?'Belum: '+blank.map(i=>FBY.get(i).l).join(', '):'';
+  const ul=$('#missList');if(!ul)return;ul.innerHTML='';
+  const items=NOTSUM.map(([id,l])=>[id,l]);
+  if(S&&!S.emHp1)items.push([138,'Emergency Contact (Halaman 4 Summary kosong)']);
+  for(const[id,l]of items){
+    const f=!!V[id];const li=el('li',{'data-go':id},el('span',{class:'badge '+(f?'ok':'warn')},f?'terisi':'kosong'),' ',l);ul.append(li);
+  }
+}
+document.addEventListener('click',e=>{const li=e.target.closest('[data-go]');if(!li)return;const r=rowEls.get(+li.dataset.go);if(!r)return;const d=r.closest('details');if(d)d.open=true;r.scrollIntoView({behavior:'smooth',block:'center'});const c=r.querySelector('input,select,textarea,button');if(c)setTimeout(()=>c.focus({preventScroll:true}),350)});
+
+/* ============ file handling ============ */
+async function handleFile(file){
+  try{
+    const sheets=await readXlsx(await file.arrayBuffer());
+    const isi=sheets.find(s=>s.name==='Isi');
+    if(isi){importIsi(isi,file.name);return}
+    if(sheets.some(s=>/^Halaman\s*1/i.test(s.name))){loadSummary(sheets,file.name);return}
+    toast('File tidak dikenali: butuh Summary Approval (Halaman 1…) atau VERTEL.xlsx (sheet "Isi")');
+  }catch(err){console.error(err);toast('Gagal membaca file: '+err.message)}
+}
+function loadSummary(sheets,name){
+  S=parseSummary(sheets);
+  const keep={};for(const k of PICIDS)keep[k]=V[k];
+  for(const k of Object.keys(V))delete V[k];Object.assign(V,keep);
+  const set=(id,v)=>{if(v!=null&&String(v).trim()!=='')V[id]=String(v).trim()};
+  set(6,S.noOrder);set(7,S.noApp);set(8,String(S.cabang||'').toUpperCase());set(10,String(S.nama||'').toUpperCase());
+  const tp=LISTS.List05.find(o=>o.toLowerCase()===String(S.tipePembiayaan||'').toLowerCase());if(tp)V[13]=tp;
+  set(17,String(S.salesName||'').toUpperCase());
+  const nk=nikMap()[V[17]||''];if(nk)V[16]=nk;
+  resetAllOk();
+  const ok=(id,c)=>{if(c)V[id]='Sesuai'};
+  ok(80,S.merk);ok(82,S.model);ok(84,S.type);ok(86,S.tahun);ok(88,S.jenisPembiayaan||S.skema);ok(90,S.tenor);ok(92,S.angsuran!=null);
+  if(S.dpGross!=null)V[97]=String(S.dpGross);
+  if(S.tujuanUnit)V[98]=String(S.tujuanUnit).toUpperCase();
+  if(S.sifat)V[100]=String(S.sifat).toUpperCase();
+  V.job=detectJob(S.pekerjaan);autoHasil='';applyHasil();
+  defaults();
+  renderCase();syncForm();refreshReport();updateStatus();updateFname(true);
+  const w=S._warn.length?` <span class="badge warn">${S._warn.length} label tidak ditemukan</span>`:'';
+  $('#status').innerHTML=`<span class="badge ok">Summary terbaca</span> ${S._found}/${S._total} data ditemukan${w}<div style="color:var(--mute);font-size:12.5px;margin-top:4px">${name}${S._survey?' · '+S._survey:''}</div>`;
+  if(S._warn.length)console.warn('Label tidak ditemukan di Summary:',S._warn);
+}
+function importIsi(sh,name){
+  for(const k of Object.keys(V))delete V[k];resetAllOk();
+  for(const f of FIELDS){
+    let v=sh.cells.get('C'+(f.id+3));if(v==null||v==='- Silahkan Pilih -'){continue}
+    if(DATE.has(f.id)&&typeof v==='number'){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);v=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())}
+    else if(TIME.has(f.id)&&typeof v==='number'&&v<1){const m=Math.round(v*1440);v=pad(Math.floor(m/60))+':'+pad(m%60)}
+    V[f.id]=String(v).trim();
+  }
+  S=null;renderCase();syncForm();openFilled();refreshReport();updateStatus();updateFname(true);
+  $('#status').innerHTML=`<span class="badge ok">VERTEL.xlsx dibuka</span> ${Object.keys(V).length} isian dimuat<div style="color:var(--mute);font-size:12.5px;margin-top:4px">${name}</div>`;
+}
+function renderCase(){
+  const card=$('#cardCase');
+  if(!S){card.hidden=true;return}
+  card.hidden=false;const kv=$('#caseKv');kv.innerHTML='';
+  const rows=[['Nama',S.nama],['No. Order / Aplikasi',[S.noOrder,S.noApp].filter(Boolean).join(' / ')],['Cabang',S.cabang],['HP debitur',S.hp1],['HP pasangan',S.hpPasangan&&(S.namaPasangan?S.hpPasangan+' ('+S.namaPasangan+')':S.hpPasangan)],
+   ['Alamat',[S.alamat,S.kel,S.kec,S.kota].filter(Boolean).join(', ')],['Pekerjaan',[S.pekerjaan,S.bidangUsaha].filter(Boolean).join(' · ')],['Omzet / lama usaha',[S.omzet!=null&&rp(S.omzet),S.lamaUsaha].filter(Boolean).join(' · ')],
+   ['Kendaraan',[S.merk,S.model,S.tahun].filter(Boolean).join(' ')],['Tenor / angsuran',[S.tenor&&S.tenor+' bln',S.angsuran!=null&&rp(S.angsuran)].filter(Boolean).join(' · ')],['DP Net',S.dpNet!=null&&rp(S.dpNet)]];
+  for(const[k,v]of rows)if(v)kv.append(el('dt',{},k),el('dd',{},String(v)));
+}
+
+/* ============ nama file & cetak ============ */
+let fnameAuto=true;
+function updateFname(force){
+  const i=$('#fname');if(!(fnameAuto||force))return;
+  if(force)fnameAuto=true;
+  const n=String(V[10]||'').trim().split(/\s+/)[0]||'';i.value=n?n.toUpperCase()+'_VERTEL':'VERTEL';
+}
+$('#fname').addEventListener('input',()=>{fnameAuto=false});
+let oldTitle=document.title;
+window.addEventListener('beforeprint',()=>{oldTitle=document.title;document.title=$('#fname').value.trim()||'VERTEL';fitPaper(true)});
+window.addEventListener('afterprint',()=>{document.title=oldTitle;fitPaper(false)});
+$('#btnPrint').addEventListener('click',()=>{
+  const blank=CORE.filter(id=>!V[id]);
+  if(blank.length&&!confirm('Masih ada isian inti yang kosong:\n• '+blank.slice(0,12).map(i=>FBY.get(i).l).join('\n• ')+(blank.length>12?'\n…':'')+'\n\nTetap lanjut simpan PDF?'))return;
+  if(timeAuto){V[22]=hm();syncForm();refreshReport()}
+  window.print();
+});
+$('#btnReset').addEventListener('click',()=>{
+  if(!confirm('Kosongkan semua isian untuk kasus baru? (Nama & jabatan PIC Vertel tetap tersimpan)'))return;
+  const keep={};for(const k of PICIDS)keep[k]=V[k];for(const k of Object.keys(V))delete V[k];Object.assign(V,keep);defaults();autoHasil='';resetAllOk();EDITPIC=false;S=null;
+  $('#status').innerHTML='';renderCase();syncForm();refreshReport();updateStatus();updateFname(true);window.scrollTo({top:0,behavior:'smooth'});
+});
+
+$('#showAuto').addEventListener('change',e=>{SHOWAUTO=e.target.checked;syncForm()});
+const drop=$('#drop'),file=$('#file');
+drop.addEventListener('click',()=>file.click());
+drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click()}});
+file.addEventListener('change',async()=>{for(const f of file.files)await handleFile(f);file.value=''});
+for(const ev of['dragenter','dragover'])window.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')});
+for(const ev of['dragleave','drop'])window.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'||e.target===document.documentElement)drop.classList.remove('over')});
+window.addEventListener('drop',async e=>{for(const f of e.dataTransfer.files)if(/\.xlsx$/i.test(f.name))await handleFile(f)});
+
+/* ============ init ============ */
+loadPic();defaults();
+buildReport();buildForm();syncForm();refreshReport();updateStatus();updateFname(true);fitPaper(false);
+new ResizeObserver(()=>{if(!matchMedia('print').matches)fitPaper(false)}).observe($('#paperwrap'));
+window.__app={V,get S(){return S},handleFile,readXlsx,parseSummary,SW,SH};
+</script>
+</body>
+</html>

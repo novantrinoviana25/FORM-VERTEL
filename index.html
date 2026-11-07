@@ -209,7 +209,7 @@ const SPEC=[
  ['ktp',1,'No KTP Nasabah','D24','F24'],['hp1',1,'No. HP 1','D39','F39'],['statusKawin',1,'Status Perkawinan','D29','F29'],
  ['namaPasangan',1,'Nama Pasangan','D44','F44'],['hpPasangan',1,'No. HP Pasangan','D50','F50'],
  ['statusRumah',1,'Status Kepemilikan Rumah','D53','F53'],['lamaTinggal',1,'Lama Tinggal','D54','F54'],
- ['pekerjaan',1,['Pekerjaan','Pekerjaan Nasabah'],'J12','L12'],['jabatan',1,'Jabatan Nasabah','J13','L13'],['lamaKerja',1,'Total Lama Kerja','J14','L14'],['jabatanPasangan',1,'Jabatan Pasangan','J16','L16'],['gaji',1,'Pendapatan Utama Perbulan','J17','M17'],['bidangUsaha',1,'Bidang Usaha','J13','L13'],['lamaUsaha',1,'Total Lama Usaha','J14','L14'],
+ ['pekerjaan',1,['Pekerjaan','Pekerjaan Nasabah'],'J12','L12'],['jabatan',1,'Jabatan Nasabah','J13','L13'],['lamaKerja',1,'Total Lama Kerja','J14','L14'],['jabatanPasangan',1,'Jabatan Pasangan','J16','L16'],['gaji',1,'Pendapatan Utama Perbulan','J17','M17'],['objek',1,'Object Pembiayaan','J44','L44'],['pencairan',1,'Total Pencairan Dana','P43','X43'],['kategoriDeb',1,'Kategori Debitur','P58','T58'],['bidangUsaha',1,'Bidang Usaha','J13','L13'],['lamaUsaha',1,'Total Lama Usaha','J14','L14'],
  ['pekerjaanPasangan',1,'Pekerjaan Pasangan','J15','L15'],['omzet',1,'Pendapatan / Omzet Usaha','J17','M17'],
  ['pendLain',1,'Pendapatan Lainnya Nasabah','J22','M22'],['pendPasangan',1,'Pendapatan Perbulan Pasangan','J23','M23'],
  ['channel',1,'Jenis Channel','J34','L34'],['outlet',1,'Outlet Channel','J35','L35'],['tipePembiayaan',1,'Tipe Pembiayaan','J36','L36'],
@@ -229,7 +229,7 @@ const SPEC=[
  ['emNama',4,'Nama Emergency Contact','L21','N21'],['emHub',4,'Hubungan Dengan Nasabah','L22','N22'],['emHp1',4,'No. HP 1/ No. Telephone Emergency Contact','L23','N23'],
  ['emHp2',4,'No. HP 2/ No. Telephone Emergency Contact','L24','N24'],['emAlamat',4,'Alamat Emergency Contact','L25','N25'],
 ];
-const OPT=new Set(['bidangUsaha','lamaUsaha','omzet','jabatan','lamaKerja','gaji','jabatanPasangan','pekerjaanPasangan','pendLain','pendPasangan']);
+const OPT=new Set(['objek','pencairan','kategoriDeb','bidangUsaha','lamaUsaha','omzet','jabatan','lamaKerja','gaji','jabatanPasangan','pekerjaanPasangan','pendLain','pendPasangan']);
 function parseSummary(sheets){
   const S={},warn=[];let found=0,total=0;
   const sh=n=>sheets.find(s=>new RegExp('^Halaman\\s*'+n+'\\b','i').test(s.name));
@@ -288,6 +288,28 @@ function applyAllOk(on){
   else{for(const id of allOkSet)if(V[id]==='Sesuai')delete V[id];allOkSet.clear()}
 }
 function resetAllOk(){allOkOn=false;allOkSet.clear()}
+const DANAPORT=['MCAR Chanelling','MCAR Retention','MMCY Chanelling','MMCY Retention'];
+let lastDana=null,pendingOpenDana=false;
+const summaryDana=()=>!!S&&(/DANA/i.test(S.objek||'')||/DANA/i.test(S.skema||'')||/IJARAH/i.test(S.skema||'')&&/MULTIJASA/i.test(S.tujuanPembiayaan||'')||/MODAL USAHA/i.test(S.skema||''));
+const captiveDana=()=>!!S&&(/IJARAH/i.test(S.skema||'')&&/MULTIJASA/i.test(S.tujuanPembiayaan||'')||/MODAL USAHA/i.test(S.skema||''));
+const isDana=()=>summaryDana()||DANAPORT.includes(V[12]);
+function applyMode(){
+  const d=isDana();if(d===lastDana)return;lastDana=d;
+  if(d){for(let i=96;i<=102;i++)delete V[i];pendingOpenDana=true;fillDana()}
+  else{for(let i=105;i<=113;i++)delete V[i];
+    if(!V[99])V[99]='DOMISILI';
+    if(S){if(S.dpGross!=null&&!V[97])V[97]=String(S.dpGross);if(S.tujuanUnit&&!V[98])V[98]=String(S.tujuanUnit).toUpperCase();if(S.sifat&&!V[100])V[100]=String(S.sifat).toUpperCase()}
+  }
+}
+function fillDana(){
+  V[105]='Ya';V[107]='Tidak';
+  if(!S)return;
+  const th=parseInt(String(S.tahun||'').replace(/\D/g,'').slice(0,4),10);
+  if(th>1950){const d=new Date().getFullYear()-th;V[109]=d>=1?d+' TAHUN':'KURANG DARI 1 TAHUN'}
+  if(S.bpkbHubungan)V[111]=String(S.bpkbHubungan).toUpperCase().trim();
+  if(Number(S.pencairan)>0)V[112]=String(Number(S.pencairan));
+  if(S.tujuanPembiayaan)V[113]=String(S.tujuanPembiayaan).toUpperCase().trim();
+}
 const nikMap=()=>{try{return JSON.parse(lsGet('vertel.nik')||'{}')}catch(e){return{}}};
 function defaults(){V[22]=hm();timeAuto=true;V[21]=todayISO();V[24]='Calon Debitur';V[23]='HP Calon Debitur';V[99]='DOMISILI';V[145]='Direkomendasikan untuk dapat dibiayai';V[142]='SESUAI'}
 function detectJob(p){const s=String(p||'').toUpperCase();
@@ -377,7 +399,13 @@ function hintMap(){
   H[17]=sum(S.salesName&&J('Summary (Internal Sales Force): '+S.salesName,S.salesJob));
   H[9]={none:'Tidak ada di Summary'};H[11]={none:'Tidak ada di Summary'};H[16]={none:'Tidak ada di Summary. Cukup diketik sekali, nanti diingat untuk CMO '+(S.salesName||'ini')};
   const map={'MOTOR BARU':'NMCY','MOTOR BEKAS':'UMCY','MOBIL BARU':'NCAR','MOBIL BEKAS':'UCAR'}[String(S.jenisKendaraan||'').toUpperCase()];
-  H[12]={none:'Tidak ada di Summary',t:J(S.jenisKendaraan,S.channel,S.outlet&&('Outlet '+S.outlet)),chips:map?[[`Saran: ${map} (cek bila dealer captive/channelling)`,map]]:[]};
+  if(captiveDana()){
+    const c=/MOTOR/.test(String(S.jenisKendaraan||'').toUpperCase())?'CAPTIVE MCY':'CAPTIVE CAR';
+    H[12]={none:'Tidak ada di Summary',t:J(S.skema,S.tujuanPembiayaan,S.tipePembiayaan,'portofolio captive'),chips:[['Captive: '+c,c]]};
+  }else if(summaryDana()){
+    const kend=String(S.jenisKendaraan||'').toUpperCase(),g=/MOBIL/.test(kend)?'MCAR':/MOTOR/.test(kend)?'MMCY':'';
+    H[12]={none:'Tidak ada di Summary',t:J(S.skema,S.jenisKendaraan,S.channel,S.kategoriDeb&&'kategori debitur '+S.kategoriDeb),chips:g?[['Saran: '+g+' Chanelling',g+' Chanelling'],['Saran: '+g+' Retention',g+' Retention']]:[]};
+  }else H[12]={none:'Tidak ada di Summary',t:J(S.jenisKendaraan,S.channel,S.outlet&&('Outlet '+S.outlet)),chips:map?[[`Saran: ${map} (cek bila dealer captive/channelling)`,map]]:[]};
   H[23]=sum(J(S.hp1&&'HP Calon Debitur '+S.hp1,S.hpPasangan&&'HP Pasangan '+S.hpPasangan));
   H[30]=sum(alamat&&'Summary: '+alamat+(S.domSesuai?' (sesuai input awal: '+S.domSesuai+')':''));
   H[32]=sum(S.lamaTinggal&&'Summary: '+S.lamaTinggal);
@@ -410,7 +438,11 @@ function hintMap(){
   H[98]=sum(S.tujuanUnit&&'Summary tujuan penggunaan unit: '+S.tujuanUnit,S.tujuanUnit?[[S.tujuanUnit,String(S.tujuanUnit).toUpperCase()]]:[]);
   H[100]=sum(S.tujuanPembiayaan&&J('Summary: tujuan '+S.tujuanPembiayaan,S.sifat&&'sifat '+S.sifat));
   H[101]=sum(S.jenisKendaraan&&(/BARU/i.test(S.jenisKendaraan)?'Unit '+S.jenisKendaraan+' → pertanyaan ini tidak perlu diisi':'Unit '+S.jenisKendaraan));
-  H[111]=sum(S.bpkbNama&&J('Summary: nama di BPKB '+S.bpkbNama,S.bpkbHubungan&&'hubungan '+S.bpkbHubungan,S.bpkbIdentitas));
+  H[105]=sum(S.bpkbIdentitas&&'Summary: '+S.bpkbIdentitas);
+  H[109]=sum(S.tahun&&'Summary: tahun pembuatan '+S.tahun);
+  H[111]=sum(S.bpkbNama&&J('Summary: nama di BPKB '+S.bpkbNama,S.bpkbHubungan&&'hubungan '+S.bpkbHubungan,S.bpkbIdentitas),S.bpkbHubungan?[['Pakai '+S.bpkbHubungan,String(S.bpkbHubungan).toUpperCase()]]:[]);
+  H[112]=sum(Number(S.pencairan)>0&&'Summary: Total Pencairan Dana '+rp(S.pencairan),Number(S.pencairan)>0?[['Pakai '+rp(S.pencairan),String(S.pencairan)]]:[]);
+  H[113]=sum(S.tujuanPembiayaan&&J('Summary: tujuan '+S.tujuanPembiayaan,S.sifat&&'sifat '+S.sifat));
   H[137]={none:'Tidak ada di Summary'+(S.emHp1?'':' (Emergency Contact di Halaman 4 kosong)'),t:S.emHp1?'Emergency Contact: '+J(S.emNama,S.emHub,S.emHp1,S.emHp2):'',chips:S.emHp1?[['Pakai '+S.emHp1,S.emHp1]]:[]};
   const infs=[[S.inf1,S.inf1h],[S.inf2,S.inf2h],[S.inf3,S.inf3h]].filter(x=>x[0]);
   const names=[],rels=[];
@@ -485,6 +517,7 @@ function buildForm(){
   mk('auto','Isian otomatis (nomor order, jam, data kendaraan, DP, lokasi pemakaian, rekomendasi, dll.)',rest,{});
 }
 function syncForm(){
+  applyMode();
   const H=hintMap();
   for(const[id,r]of rowEls){
     const v=V[id]??'';const c=r.querySelector('[data-id]');
@@ -495,7 +528,13 @@ function syncForm(){
     if(KERJA_IDS.has(id)||USAHA_IDS.has(id)){const cnd=COND[id]?!(V[COND[id].p]===COND[id].v||v):false;r.hidden=jobHidden(id)||cnd}
     if(id===1||id===2)r.hidden=!!(V[1]&&V[2])&&!EDITPIC;
     if(id===3)r.hidden=!(V[2]==='Lainnya'||v)||(!!(V[1]&&V[2])&&!EDITPIC);
-    if(id===101)r.hidden=!!(S&&/BARU/i.test(S.jenisKendaraan||''))&&!v;
+    if(id===96)r.hidden=isDana();
+    if(id===105||id===107)r.hidden=true;
+    if(id===109)r.hidden=!!(S&&S.tahun&&V[109]);
+    if(id===111)r.hidden=!!(S&&S.bpkbHubungan&&V[111]);
+    if(id===112)r.hidden=!!(S&&Number(S.pencairan)>0&&V[112]);
+    if(id===113)r.hidden=!!(S&&S.tujuanPembiayaan&&V[113]);
+    if(id===101)r.hidden=isDana()||(!!(S&&/BARU/i.test(S.jenisKendaraan||''))&&!v);
     const hh=r.querySelector('[data-hint]');const h=H[id];hh.innerHTML='';
     if(h&&(h.t||h.none||(h.chips&&h.chips.length))){
       hh.hidden=false;hh.className='hint'+((h.none&&!v)?' none':'');
@@ -507,7 +546,8 @@ function syncForm(){
   for(const b of document.querySelectorAll('[data-j]'))b.classList.toggle('on',b.dataset.j===V.job);
   const setH=(k,h)=>{const c=document.querySelector(`details[data-card="${k}"]`);if(c)c.hidden=h};
   setH('work',!WORKPLACE.includes(V.job));
-  setH('dana',!!(S&&/KENDARAAN/i.test(S.tujuanPembiayaan||'')));
+  setH('dana',!isDana());
+  if(pendingOpenDana){const dc=document.querySelector('details[data-card="dana"]');if(dc)dc.open=true;pendingOpenDana=false}
   setH('auto',!SHOWAUTO);
   const pl=document.querySelector('[data-picline]');
   if(pl){const show=!!(V[1]&&V[2])&&!EDITPIC;pl.hidden=!show;pl.innerHTML='';
@@ -574,9 +614,10 @@ function loadSummary(sheets,name){
   const set=(id,v)=>{if(v!=null&&String(v).trim()!=='')V[id]=String(v).trim()};
   set(6,S.noOrder);set(7,S.noApp);set(8,String(S.cabang||'').toUpperCase());set(10,String(S.nama||'').toUpperCase());
   const tp=LISTS.List05.find(o=>o.toLowerCase()===String(S.tipePembiayaan||'').toLowerCase());if(tp)V[13]=tp;
+  if(captiveDana()){const k=String(S.jenisKendaraan||'').toUpperCase();V[12]=/MOTOR/.test(k)?'CAPTIVE MCY':'CAPTIVE CAR'}
   set(17,String(S.salesName||'').toUpperCase());
   const nk=nikMap()[V[17]||''];if(nk)V[16]=nk;
-  resetAllOk();
+  resetAllOk();lastDana=null;
   const ok=(id,c)=>{if(c)V[id]='Sesuai'};
   ok(80,S.merk);ok(82,S.model);ok(84,S.type);ok(86,S.tahun);ok(88,S.jenisPembiayaan||S.skema);ok(90,S.tenor);ok(92,S.angsuran!=null);
   if(S.dpGross!=null)V[97]=String(S.dpGross);
@@ -590,7 +631,7 @@ function loadSummary(sheets,name){
   if(S._warn.length)console.warn('Label tidak ditemukan di Summary:',S._warn);
 }
 function importIsi(sh,name){
-  for(const k of Object.keys(V))delete V[k];resetAllOk();
+  for(const k of Object.keys(V))delete V[k];resetAllOk();lastDana=null;
   for(const f of FIELDS){
     let v=sh.cells.get('C'+(f.id+3));if(v==null||v==='- Silahkan Pilih -'){continue}
     if(DATE.has(f.id)&&typeof v==='number'){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);v=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())}
@@ -606,7 +647,7 @@ function renderCase(){
   card.hidden=false;const kv=$('#caseKv');kv.innerHTML='';
   const rows=[['Nama',S.nama],['No. Order / Aplikasi',[S.noOrder,S.noApp].filter(Boolean).join(' / ')],['Cabang',S.cabang],['HP debitur',S.hp1],['HP pasangan',S.hpPasangan&&(S.namaPasangan?S.hpPasangan+' ('+S.namaPasangan+')':S.hpPasangan)],
    ['Alamat',[S.alamat,S.kel,S.kec,S.kota].filter(Boolean).join(', ')],['Pekerjaan',[S.pekerjaan,S.bidangUsaha].filter(Boolean).join(' · ')],[S.gaji!=null?'Gaji / lama kerja':'Omzet / lama usaha',(S.gaji!=null?[rp(S.gaji),S.lamaKerja]:[S.omzet!=null&&rp(S.omzet),S.lamaUsaha]).filter(Boolean).join(' · ')],['Jabatan',S.jabatan],
-   ['Kendaraan',[S.merk,S.model,S.tahun].filter(Boolean).join(' ')],['Tenor / angsuran',[S.tenor&&S.tenor+' bln',S.angsuran!=null&&rp(S.angsuran)].filter(Boolean).join(' · ')],['DP Net',S.dpNet!=null&&rp(S.dpNet)]];
+   ['Kendaraan',[S.merk,S.model,S.tahun].filter(Boolean).join(' ')],['Fasilitas',summaryDana()?[S.skema,Number(S.pencairan)>0&&'cair '+rp(S.pencairan)].filter(Boolean).join(' · '):''],['Tenor / angsuran',[S.tenor&&S.tenor+' bln',S.angsuran!=null&&rp(S.angsuran)].filter(Boolean).join(' · ')],['DP Net',S.dpNet!=null&&rp(S.dpNet)]];
   for(const[k,v]of rows)if(v)kv.append(el('dt',{},k),el('dd',{},String(v)));
 }
 
@@ -719,6 +760,7 @@ function precheck(){
   return !(blank.length&&!confirm('Masih ada isian inti yang kosong:\n• '+blank.slice(0,12).map(i=>FBY.get(i).l).join('\n• ')+(blank.length>12?'\n…':'')+'\n\nTetap lanjut simpan PDF?'));
 }
 async function downloadPdf(){
+  applyMode();
   if(timeAuto){V[22]=hm();syncForm();refreshReport()}
   const name=($('#fname').value.trim()||'VERTEL').replace(/[\\/:*?"<>|]+/g,'_');
   const bytes=await makePdf(name);
@@ -730,7 +772,7 @@ $('#btnPdf').addEventListener('click',async()=>{if(!precheck())return;try{await 
 $('#btnPrint').addEventListener('click',()=>{if(!precheck())return;if(timeAuto){V[22]=hm();syncForm();refreshReport()}window.print()});
 $('#btnReset').addEventListener('click',()=>{
   if(!confirm('Kosongkan semua isian untuk kasus baru? (Nama & jabatan PIC Vertel tetap tersimpan)'))return;
-  const keep={};for(const k of PICIDS)keep[k]=V[k];for(const k of Object.keys(V))delete V[k];Object.assign(V,keep);defaults();autoHasil='';resetAllOk();EDITPIC=false;S=null;
+  const keep={};for(const k of PICIDS)keep[k]=V[k];for(const k of Object.keys(V))delete V[k];Object.assign(V,keep);defaults();autoHasil='';resetAllOk();lastDana=null;EDITPIC=false;S=null;
   $('#status').innerHTML='';renderCase();syncForm();refreshReport();updateStatus();updateFname(true);window.scrollTo({top:0,behavior:'smooth'});
 });
 

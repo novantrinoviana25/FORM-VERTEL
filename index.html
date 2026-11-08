@@ -297,6 +297,8 @@ function applyMode(){
   const d=isDana();if(d===lastDana)return;lastDana=d;
   if(d){for(let i=96;i<=102;i++)delete V[i];pendingOpenDana=true;fillDana()}
   else{for(let i=105;i<=113;i++)delete V[i];
+    if(!V[96])V[96]='Belum';
+    {const jk=S?String(S.jenisKendaraan||''):'';if(jk&&!/BARU/i.test(jk)&&!V[101])V[101]='Sudah'}
     if(!V[99])V[99]='DOMISILI';
     if(S){if(S.dpGross!=null&&!V[97])V[97]=String(S.dpGross);if(S.tujuanUnit&&!V[98])V[98]=String(S.tujuanUnit).toUpperCase();if(S.sifat&&!V[100])V[100]=String(S.sifat).toUpperCase()}
   }
@@ -528,13 +530,13 @@ function syncForm(){
     if(KERJA_IDS.has(id)||USAHA_IDS.has(id)){const cnd=COND[id]?!(V[COND[id].p]===COND[id].v||v):false;r.hidden=jobHidden(id)||cnd}
     if(id===1||id===2)r.hidden=!!(V[1]&&V[2])&&!EDITPIC;
     if(id===3)r.hidden=!(V[2]==='Lainnya'||v)||(!!(V[1]&&V[2])&&!EDITPIC);
-    if(id===96)r.hidden=isDana();
+    if(id===96)r.hidden=true;
     if(id===105||id===107)r.hidden=true;
     if(id===109)r.hidden=!!(S&&S.tahun&&V[109]);
     if(id===111)r.hidden=!!(S&&S.bpkbHubungan&&V[111]);
     if(id===112)r.hidden=!!(S&&Number(S.pencairan)>0&&V[112]);
     if(id===113)r.hidden=!!(S&&S.tujuanPembiayaan&&V[113]);
-    if(id===101)r.hidden=isDana()||(!!(S&&/BARU/i.test(S.jenisKendaraan||''))&&!v);
+    if(id===101)r.hidden=true;
     const hh=r.querySelector('[data-hint]');const h=H[id];hh.innerHTML='';
     if(h&&(h.t||h.none||(h.chips&&h.chips.length))){
       hh.hidden=false;hh.className='hint'+((h.none&&!v)?' none':'');

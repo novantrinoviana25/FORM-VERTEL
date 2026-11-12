@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vertel ke PDF</title>
+<title>FORM VERTEL</title>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#fff; --ink:#1b1f24; --mute:#5b6570; --line:#dfe3e8; --soft:#eef1f4;
-  --acc:#0b5fff; --acc-ink:#fff; --ok:#0f7b45; --warn:#b45309; --warn-bg:#fff4e0; --ok-bg:#e6f5ec; --chip:#e8f0ff;
+  --acc:#059669; --acc-ink:#fff; --ok:#047857; --warn:#b45309; --warn-bg:#fef3c7; --ok-bg:#d1fae5; --chip:#d1fae5; --bg2:#eef2f6;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#14171b; --panel:#1c2026; --ink:#e8ebef; --mute:#9aa4af; --line:#2c333b; --soft:#252b33;
-    --acc:#5b94ff; --acc-ink:#0b1220; --ok:#4cc38a; --warn:#f0b35a; --warn-bg:#33291a; --ok-bg:#16301f; --chip:#1f2c47;
+    --acc:#34d399; --acc-ink:#04221a; --ok:#4cc38a; --warn:#f0b35a; --warn-bg:#33291a; --ok-bg:#16301f; --chip:#12352b; --bg2:#101418;
   }
 }
 *{box-sizing:border-box}
@@ -85,12 +85,58 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-off
 .sheet .c.sp{position:relative;z-index:1}
 .sheet .c.w .t{white-space:pre-wrap;overflow-wrap:anywhere}
 .sheet .c.col .t{display:flex;justify-content:space-between}
-.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1b1f24;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1b1f24;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw}
 .toast.show{opacity:1}
+
+/* ---- tampilan hijau, kartu bulat ---- */
+body{background:linear-gradient(180deg,var(--bg) 0,var(--bg2) 100%) fixed}
+header.top{border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(15,23,42,.03)}
+header.top .brand{display:grid;grid-template-columns:28px auto;column-gap:10px;align-items:center}
+header.top h1{font-size:17px;font-weight:850;letter-spacing:.02em;line-height:1.1;margin:0}
+header.top .by{grid-column:2;font-size:11.5px;color:var(--mute);line-height:1.2;margin-top:1px}
+header.top .brand::before{grid-row:1/3;content:"";width:28px;height:28px;border-radius:8px;background:var(--acc);box-shadow:inset 0 0 0 7px var(--acc),inset 0 0 0 9px rgba(255,255,255,.9);flex:none}
+button,.btn{border-radius:10px}
+button.primary{border-radius:12px;box-shadow:0 4px 12px rgba(5,150,105,.28)}
+.card{border-radius:20px;padding:18px;box-shadow:0 6px 24px rgba(15,23,42,.06)}
+.card h2,details.card>summary{font-size:15px;letter-spacing:0;text-transform:none;color:var(--acc);font-weight:750}
+.opt{border-radius:99px}
+.drop{border-radius:16px}
+.badge{border-radius:99px}
+.row{border-top:1px solid var(--soft)}
+.row .lab{font-weight:650}
+.hint .src{border-radius:8px}
+.chip{border:1px solid rgba(5,150,105,.25);padding:3px 11px}
+input[type=text],input[type=date],input[type=time],select,textarea{border-radius:12px;padding:9px 11px;background:var(--panel)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.seg{border-radius:12px;padding:3px;gap:3px;background:var(--soft);border:0}
+.seg button{border:0;border-radius:9px;background:transparent;color:var(--mute);font-weight:600}
+.seg button.on{background:var(--acc);color:var(--acc-ink);box-shadow:0 2px 8px rgba(5,150,105,.3)}
+.seg button.on.bad{background:var(--warn);color:#fff}
+.paperwrap{border-radius:20px}
+
+body{padding-bottom:84px}
+.sp{flex:1}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;align-items:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(15,23,42,.08)}
+.dock button{padding:10px 16px;font-weight:650}
+.dock button.primary{padding:11px 26px;font-size:15px}
+.cnt{background:var(--chip);color:var(--acc);border-radius:99px;padding:0 7px;font-size:12px;font-weight:700}
+.cnt:empty{display:none}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;padding:16px}
+.modal[hidden]{display:none}
+.sheetm{background:var(--panel);border-radius:22px;width:min(640px,100%);max-height:80vh;display:flex;flex-direction:column;gap:10px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.mh,.mf{display:flex;align-items:center;gap:8px}
+.mh b{font-size:16px;color:var(--acc)}
+.hl{overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:80px}
+.hi{border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.hi .t{flex:1;min-width:0}
+.hi .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hi .t span{color:var(--mute);font-size:12.5px}
+.hi button{padding:6px 12px;font-size:13px}
+.hempty{color:var(--mute);text-align:center;padding:24px 0}
 @media print{
   @page{size:Letter portrait;margin:.1in}
   html,body{background:#fff!important;height:auto!important}
-  header.top,.col-form,.prevbar,.toast{display:none!important}
+  header.top,.col-form,.prevbar,.toast,.dock,.modal{display:none!important}
   .layout{display:block;padding:0;max-width:none;margin:0}
   .col-prev{position:static}
   .paperwrap{background:none;padding:0;overflow:visible;border-radius:0}
@@ -101,13 +147,23 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-off
 </head>
 <body>
 <header class="top">
-  <h1>Vertel → PDF</h1>
+  <div class="brand"><h1>FORM VERTEL</h1><div class="by">By Novan Tri Noviana</div></div>
   <span class="sub">Semua data diproses di browser ini saja, tidak ada yang dikirim ke mana pun.</span>
-  <span class="sp"></span>
-  <button id="btnReset" class="ghost" title="Kosongkan form untuk kasus baru">Kasus baru</button>
-  <button id="btnPrint" class="ghost" title="Cetak lewat dialog printer (cadangan)">Cetak</button>
-  <button id="btnPdf" class="primary">Simpan PDF</button>
 </header>
+<div class="dock" id="dock">
+  <button id="btnReset" title="Kosongkan form untuk kasus baru">＋ Buat Form Vertel Baru</button>
+  <button id="btnHist" title="Lihat form vertel sebelumnya">🕘 Riwayat <span id="histN" class="cnt"></span></button>
+  <span class="sp"></span>
+  <button id="btnPdf" class="primary">Simpan PDF</button>
+</div>
+<div class="modal" id="histModal" hidden>
+  <div class="sheetm" role="dialog" aria-label="Riwayat vertel">
+    <div class="mh"><b>Riwayat Vertel</b><span class="sp"></span><button id="histClose" class="ghost">Tutup ✕</button></div>
+    <input type="text" id="histQ" placeholder="Cari nama / no. order / no. aplikasi…">
+    <div id="histList" class="hl"></div>
+    <div class="mf"><span class="hint" style="margin:0">Tersimpan di browser ini saja (maks. 100 terakhir).</span><span class="sp"></span><button id="histClear" class="ghost">Hapus semua</button></div>
+  </div>
+</div>
 
 <div class="layout">
   <div class="col-form" id="colForm">
@@ -771,12 +827,13 @@ async function downloadPdf(){
   const bytes=await makePdf(name);
   const a=el('a',{href:URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),download:name+'.pdf'});
   document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  saveHistory(true);
   toast('PDF diunduh: '+name+'.pdf (lihat folder Downloads)');
 }
 $('#btnPdf').addEventListener('click',async()=>{if(!precheck())return;try{await downloadPdf()}catch(err){console.error(err);toast('Gagal membuat PDF: '+err.message)}});
-$('#btnPrint').addEventListener('click',()=>{if(!precheck())return;if(timeAuto){V[22]=hm();syncForm();refreshReport()}window.print()});
 $('#btnReset').addEventListener('click',()=>{
-  if(!confirm('Kosongkan semua isian untuk kasus baru? (Nama & jabatan PIC Vertel tetap tersimpan)'))return;
+  if(!confirm('Buat form vertel baru? Form ini disimpan dulu ke Riwayat. (Nama & jabatan PIC Vertel tetap tersimpan)'))return;
+  saveHistory(true);curHist=null;
   const keep={};for(const k of PICIDS)keep[k]=V[k];for(const k of Object.keys(V))delete V[k];Object.assign(V,keep);defaults();autoHasil='';resetAllOk();lastDana=null;EDITPIC=false;S=null;
   $('#status').innerHTML='';renderCase();syncForm();refreshReport();updateStatus();updateFname(true);window.scrollTo({top:0,behavior:'smooth'});
 });
@@ -789,6 +846,49 @@ file.addEventListener('change',async()=>{for(const f of file.files)await handleF
 for(const ev of['dragenter','dragover'])window.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')});
 for(const ev of['dragleave','drop'])window.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'||e.target===document.documentElement)drop.classList.remove('over')});
 window.addEventListener('drop',async e=>{for(const f of e.dataTransfer.files)if(/\.xlsx$/i.test(f.name))await handleFile(f)});
+
+
+/* ============ riwayat ============ */
+const HKEY='vertel.hist';let curHist=null;
+const hload=()=>{try{const a=JSON.parse(localStorage.getItem(HKEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}};
+const hsave=a=>{try{localStorage.setItem(HKEY,JSON.stringify(a.slice(0,100)));return true}catch(e){return false}};
+function histCount(){const n=hload().length;$('#histN').textContent=n?String(n):''}
+function saveHistory(silent){
+  if(!V[10]&&!(S&&S.nama))return;
+  const a=hload(),id=curHist||('h'+Date.now());
+  const e={id,ts:Date.now(),nama:String(V[10]||S.nama||''),noApp:String(V[7]||(S&&S.noApp)||''),noOrder:String(V[6]||(S&&S.noOrder)||''),porto:String(V[12]||''),fname:$('#fname').value,fnameAuto,autoHasil,allOkOn,allOk:[...allOkSet],V:{...V},S};
+  const k=a.findIndex(x=>x.id===id);if(k>=0)a.splice(k,1);a.unshift(e);curHist=id;
+  if(!hsave(a)&&!silent)toast('Riwayat tidak bisa disimpan (penyimpanan browser penuh/diblokir)');
+  histCount();
+}
+function openHistory(e){
+  for(const k of Object.keys(V))delete V[k];Object.assign(V,e.V);S=e.S||null;autoHasil=e.autoHasil||'';
+  allOkOn=!!e.allOkOn;allOkSet.clear();for(const x of e.allOk||[])allOkSet.add(x);
+  EDITPIC=false;timeAuto=false;curHist=e.id;lastDana=isDana();
+  $('#status').innerHTML=`<span class="badge ok">Dibuka dari riwayat</span> ${S?(S.noApp||''):''}`;
+  renderCase();syncForm();openFilled();refreshReport();updateStatus();
+  fnameAuto=!!e.fnameAuto;$('#fname').value=e.fname||'VERTEL';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function renderHist(){
+  const q=$('#histQ').value.trim().toLowerCase(),box=$('#histList');box.innerHTML='';
+  const a=hload().filter(e=>!q||[e.nama,e.noApp,e.noOrder].join(' ').toLowerCase().includes(q));
+  if(!a.length){box.append(el('div',{class:'hempty'},q?'Tidak ada yang cocok.':'Belum ada riwayat. Form tersimpan di sini setiap kali kamu menyimpan PDF.'));return}
+  for(const e of a){
+    const d=new Date(e.ts),tg=d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.',':');
+    box.append(el('div',{class:'hi'},
+      el('div',{class:'t'},el('b',{},e.nama||'(tanpa nama)'),el('span',{},[e.noApp,e.porto,tg].filter(Boolean).join(' · '))),
+      el('button',{class:'primary',onclick:()=>{openHistory(e);$('#histModal').hidden=true}},'Buka'),
+      el('button',{class:'ghost',title:'Hapus',onclick:()=>{if(!confirm('Hapus riwayat '+(e.nama||'ini')+'?'))return;hsave(hload().filter(x=>x.id!==e.id));if(curHist===e.id)curHist=null;histCount();renderHist()}},'Hapus')));
+  }
+}
+$('#btnHist').addEventListener('click',()=>{$('#histQ').value='';renderHist();$('#histModal').hidden=false});
+$('#histClose').addEventListener('click',()=>{$('#histModal').hidden=true});
+$('#histModal').addEventListener('click',e=>{if(e.target.id==='histModal')$('#histModal').hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#histModal').hidden=true});
+$('#histQ').addEventListener('input',renderHist);
+$('#histClear').addEventListener('click',()=>{if(hload().length&&confirm('Hapus SEMUA riwayat vertel?')){hsave([]);curHist=null;histCount();renderHist()}});
+histCount();
 
 /* ============ init ============ */
 loadPic();defaults();

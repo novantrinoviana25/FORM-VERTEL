@@ -275,7 +275,10 @@ const INFO=FIELDS.filter(f=>f.id>=135&&f.id<=140).map(f=>f.id);
 const KERJA_IDS=new Set([41,42,43,44,45,46,47,48,49,50]);
 const USAHA_IDS=new Set([52,53,54,55,56,57,58,59,60,61,62,63,64,65]);
 function jobHidden(id){const j=V.job;if(!j)return false;return WORKPLACE.includes(j)?USAHA_IDS.has(id):KERJA_IDS.has(id)}
+const WORKAUTO=[121,122,123,124,125,126,127,128,129,130,131,132];
 function applyJob(){
+  if(WORKPLACE.includes(V.job)){for(const id of WORKOK)if(!V[id])V[id]='Ya';if(!V[131])V[131]='TRANSFER';if(!V[132])V[132]='1'}
+  else for(const id of WORKAUTO)delete V[id];
   for(const id of[...KERJA_IDS,...USAHA_IDS])if(jobHidden(id)){delete V[id];allOkSet.delete(id)}
   if(allOkOn)applyAllOk(true);
 }
@@ -507,8 +510,7 @@ function buildForm(){
   mk('verif','Verifikasi hasil telepon',[],{pre:[chk,note]});
   mk('exc','Ada yang tidak sesuai? Tandai di sini',EXC,{open:false,sumId:'excSum'});
   // 3. tempat kerja (karyawan)
-  const bw=el('button',{type:'button',onclick:()=>{for(const id of WORKOK)if(!V[id])V[id]='Ya';syncForm();refreshReport();updateStatus();toast('Terisi "Ya" untuk isian yang masih kosong')}},'Tandai semua "Ya"');
-  mk('work',FBY.get(115).l,WORK,{pre:[el('div',{class:'tools'},bw)]});
+  mk('work',FBY.get(115).l,WORK);
   // 4. info pihak lain (selalu terbuka)
   mk('info','Informasi tambahan: telepon ke pihak lain',INFO);
   // 5. dana
@@ -531,6 +533,7 @@ function syncForm(){
     if(id===1||id===2)r.hidden=!!(V[1]&&V[2])&&!EDITPIC;
     if(id===3)r.hidden=!(V[2]==='Lainnya'||v)||(!!(V[1]&&V[2])&&!EDITPIC);
     if(id===96)r.hidden=true;
+    if(WORKAUTO.includes(id))r.hidden=true;
     if(id===105||id===107)r.hidden=true;
     if(id===109)r.hidden=!!(S&&S.tahun&&V[109]);
     if(id===111)r.hidden=!!(S&&S.bpkbHubungan&&V[111]);
